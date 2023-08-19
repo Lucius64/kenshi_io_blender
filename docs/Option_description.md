@@ -74,7 +74,7 @@
 
 
 ## Import skeleton
-![import_1](image/option_import_skeleton.png)
+![import_2](image/option_import_skeleton.png)
 
 1. Use selected armature
     - When enabled, animations will be imported by linking with the active armature.
@@ -88,7 +88,7 @@
 
 
 ## Export skeleton
-![export_1](image/option_export_skeleton.png)
+![export_2](image/option_export_skeleton.png)
 
 1. Skeleton version
     - Export skeleton in selected version.
@@ -108,3 +108,26 @@
 
 1. Include bones with undefined IDs
     - Same as Export mesh.
+
+
+## Import collision
+![import_3](image/option_import_physx.png)
+
+1. Encoding
+    - Encode the XML file with the selected character code.
+
+
+## Export collision
+![export_3](image/option_export_physx.png)
+
+1. Objects
+    - "All Objects" is exports all collision objects in the scene.
+    - "Selection" exports only selected objects
+    - "Selected Children" exports the selected object and all its child objects.
+
+1. Transform
+    -  Adjust the global position of the object.
+    - "Scene" is relative to the origin of the scene.
+    - "Parent" is relative to the common parent.
+    - "Active" is relative to the active object.
+

@@ -74,7 +74,7 @@
 
 
 ## Import skeleton
-![import_1](image/option_import_skeleton-ja.png)
+![import_2](image/option_import_skeleton-ja.png)
 
 1. 選択したアーマチュアを使用
     - 有効にするとアクティブなアーマチュアとリンクしてアニメーションをインポートします。
@@ -88,7 +88,7 @@
 
 
 ## Export skeleton
-![export_1](image/option_export_skeleton-ja.png)
+![export_2](image/option_export_skeleton-ja.png)
 
 1. スケルトンバージョン
     - 選択したバージョンでスケルトンをエクスポートします。
@@ -108,3 +108,26 @@
 
 1. IDが未定義のボーンを含める
     - Export meshと同じです。
+
+
+## Import collision
+![import_3](image/option_import_physx-ja.png)
+
+1. エンコーディング
+    - 選択した文字コードでXMLファイルをエンコーディングします。
+
+
+## Export collision
+![export_3](image/option_export_physx-ja.png)
+
+1. オブジェクト
+    - 「全オブジェクト」はシーン内のすべてのコリジョンオブジェクトをエクスポートします。
+    - 「選択」は選択したオブジェクトのみエクスポートします
+    - 「選択(子を含む)」は選択したオブジェクトとそのすべての子オブジェクトをエクスポートします。
+
+1. トランスフォーム
+    -  オブジェクトのグローバルポジションを調整します。
+    - 「シーン」はシーンの原点を基準にします。
+    - 「ペアレント」は共通のペアレントを基準にします。
+    - 「アクティブ」はアクティブなオブジェクトを基準にします。
+
