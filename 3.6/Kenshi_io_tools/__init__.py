@@ -85,7 +85,7 @@ Weightmaps can get mixed up if not selected''',
     select_encoding: EnumProperty(
         name='Encoding',
         description='If characters are not displayed correctly, try changing the character code',
-        items=util.code_page_list(),
+        items=code_page_list(),
         default='utf-8',
         )
     use_filename: BoolProperty(
@@ -378,7 +378,7 @@ class KENSHI_OT_ImportPhysXObject(Operator, ImportHelper):
     select_encoding: EnumProperty(
         name='Encoding',
         description='If characters are not displayed correctly, try changing the character code',
-        items=util.code_page_list(),
+        items=code_page_list(),
         default='utf-8',
         )
     filter_glob: StringProperty(
