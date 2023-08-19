@@ -121,7 +121,7 @@
 ![export_3](image/option_export_physx.png)
 
 1. Objects
-    - "All Objects" is exports all collision objects in the scene.
+    - "All Objects" exports all collision objects in the scene.
     - "Selection" exports only selected objects
     - "Selected Children" exports the selected object and all its child objects.
 
