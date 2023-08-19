@@ -71,7 +71,7 @@ class KENSHI_OT_ImportOgreObject(Operator, ImportHelper):
     create_materials: BoolProperty(
         name='Create materials',
         description='Create materials (name only)',
-        default=True,
+        default=False,
         )
     use_selected_skeleton: BoolProperty(
         name='Use selected armature',
@@ -404,6 +404,7 @@ class KENSHI_OT_ImportPhysXObject(Operator, ImportHelper):
 
         row = layout.row()
         row.template_icon_view(context.scene, "physx_logo")
+        layout.label(text='PhysX Technology provided under license from NVIDIA Corporation. © 2002-2011 NVIDIA Corporation. All rights reserved.')
 
 
 class KENSHI_OT_ExportPhysXObject(Operator, ExportHelper):
@@ -455,6 +456,7 @@ class KENSHI_OT_ExportPhysXObject(Operator, ExportHelper):
 
         row = layout.row()
         row.template_icon_view(context.scene, "physx_logo")
+        layout.label(text='PhysX Technology provided under license from NVIDIA Corporation. © 2002-2011 NVIDIA Corporation. All rights reserved.')
 
 
 def menu_func_import(self, context):
@@ -504,8 +506,12 @@ def register():
     preview_collections['physx'] = pcoll
 
     Scene.physx_logo = EnumProperty(
-        items=[('PhysX_by_NVIDIA_Logo', 'PhysX_by_NVIDIA_Logo', '', physx_image.icon_id, 0)]
-        )
+        items=[('PhysX_by_NVIDIA_Logo',
+                'PhysX_by_NVIDIA_Logo',
+                'PhysX Technology provided under license from NVIDIA Corporation. © 2002-2011 NVIDIA Corporation. All rights reserved.',
+                physx_image.icon_id,
+                0
+                )])
 
     for cls in classes:
         register_class(cls)
