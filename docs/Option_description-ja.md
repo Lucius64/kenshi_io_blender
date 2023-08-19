@@ -1,7 +1,7 @@
 # オプションの説明
 
 ## Import mesh
-![import_1](image/option_import_mesh.png)
+![import_1](image/option_import_mesh-ja.png)
 
 1. エンコーディング
     - 選択した文字コードでメッシュとマテリアルの名前をエンコーディングします。
@@ -29,7 +29,7 @@
 
 
 ## Export mesh
-![export_1](image/option_export_mesh.png)
+![export_1](image/option_export_mesh-ja.png)
 
 1. メッシュバージョン
     - 選択したバージョンでメッシュ(とスケルトン)をエクスポートします。
@@ -74,7 +74,7 @@
 
 
 ## Import skeleton
-![import_1](image/option_import_skeleton.png)
+![import_1](image/option_import_skeleton-ja.png)
 
 1. 選択したアーマチュアを使用
     - 有効にするとアクティブなアーマチュアとリンクしてアニメーションをインポートします。
@@ -88,7 +88,7 @@
 
 
 ## Export skeleton
-![export_1](image/option_export_skeleton.png)
+![export_1](image/option_export_skeleton-ja.png)
 
 1. スケルトンバージョン
     - 選択したバージョンでスケルトンをエクスポートします。
