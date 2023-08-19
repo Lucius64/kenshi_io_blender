@@ -1,5 +1,7 @@
 # Kenshi Blender Plugin
 
+[English](../README.md)
+
 Kenshiの3DアセットをBlenderにインポート及びエクスポートするためのプラグインです。
 
 ## 機能
@@ -23,9 +25,9 @@ Kenshiの3DアセットをBlenderにインポート及びエクスポートす�
 
 ### パフォーマンス
 
-パフォーマンスが改善され、高速に動作するようになりました。
+パフォーマンスが向上し、より高速に動作するようになりました。
 
-参考までにBlender 2.93におけるhuman_male.meshとmale_skeleton.skeletonの処理時間は以下の通りです。
+参考までにBlender 2.93における「human_male.mesh」と「male_skeleton.skeleton」の処理時間は以下の通りです。
 
 | 条件 | インポート | エクスポート |
 | --- | --------- | ----------- |

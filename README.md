@@ -1,6 +1,8 @@
 # Kenshi Blender Plugin
 
-This is a plugin for importing and exporting Kenshi 3D assets to Blender.
+[Japanes](docs/README-ja.md)
+
+This is a plugin to import and export Kenshi 3D assets to Blender.
 
 ## Features
 It has the following operators:
@@ -25,7 +27,7 @@ It has the following operators:
 
 Performance has been improved and now runs faster.
 
-For reference, the processing time of human_male.mesh and male_skeleton.skeleton in Blender 2.93 is as follows.
+For reference, the processing time of "human_male.mesh" and "male_skeleton.skeleton" in Blender 2.93 is as follows.
 
 | conditions | import | export |
 | --- | --------- | ----------- |
