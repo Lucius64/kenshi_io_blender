@@ -4,6 +4,13 @@
 
 This is a plugin to import and export Kenshi 3D assets to Blender.
 
+
+## Requirements
+
+- Windows
+- Blender 2.79 or higher
+
+
 ## Features
 It has the following operators:
 
@@ -17,7 +24,7 @@ It has the following operators:
 
 ## Description
 
-- [Installing](docs/Installation.md)
+- [Installing/Uninstalling](docs/Installation.md)
 - [Option description](docs/Option_description.md)
 
 
@@ -50,3 +57,8 @@ Fixed the following bugs that exist in the official version.
 - Smooth shading is not applied to imported meshes since official version 0.9.0
 - When exporting multiple animations, bones without keyframes inherit poses from the previous animation.
 - Exporting a model with non-ASCII characters in object names or material names with Blender 2.92 or lower fails to import for users in different regions or Blender 2.93 or higher.
+
+
+## NOTICE
+
+[NOTICE](NOTICE.md)

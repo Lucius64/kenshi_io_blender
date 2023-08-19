@@ -26,3 +26,11 @@
 
     ![installing_1](image/installing_5.png)
 
+
+# Uninstalling
+
+1. Disable Add-on
+
+1. Relaunch Blender
+
+1. Open Preferences and click Remove for the add-on.

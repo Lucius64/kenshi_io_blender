@@ -65,3 +65,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Please also refer to the file .github/CONTRIBUTING.md, which clarifies licensing of
 external contributions to this project including patches, pull requests, etc.
 ```
+
+## NVIDIA PhysX
+[UELA](https://developer.download.nvidia.com/assets/gamedev/docs/NVIDIA%20PhysX%20SDK%20EULA_3.pdf)
+
+```
+PhysX Technology provided under license from NVIDIA Corporation. © 2002-2011 NVIDIA Corporation. All rights reserved.
+```

@@ -13,7 +13,7 @@
     - If enabled, add materials using the material names contained in the file.
 
 1. Determine mesh name from file name
-    - When enabled, the mesh name will be {filename}_{submesh index}.
+    - When enabled, the mesh name will be {filename}{submesh index}.
     - When disabled, the mesh name will be the sub-mesh name contained in the file. If there is no corresponding item, it will be the same as when enabled.
 
 1. Use selected armature
