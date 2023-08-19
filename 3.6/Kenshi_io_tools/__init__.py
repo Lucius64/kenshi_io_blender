@@ -7,7 +7,7 @@ bl_info = {
     "location": "File > Import-Export",
     "description": ("Import-Export Kenshi Model and collision files."),
     "warning": "",
-    "wiki_url": "https://github.com/Lucius64/kenshi_io_tools",
+    "doc_url": "https://github.com/Lucius64/kenshi_io_tools",
     "tracker_url": "https://github.com/Lucius64/kenshi_io_tools",
     "support": 'COMMUNITY',
     "category": "Import-Export"}
