@@ -97,8 +97,7 @@ def set_animations(
             export_info_log.append('Export action {}'.format(act.name))
             start, end = act.frame_range
             animation = AnimationData()
-            animation_name_idx = act.name.find(':')
-            animation.name = act.name if animation_name_idx < 0 else act.name[:animation_name_idx]
+            animation.name = act.name
             animation.length = (int(end) - int(start)) / fps
             if is_visual_keying:
                 set_baked_track(scene=new_scene,
