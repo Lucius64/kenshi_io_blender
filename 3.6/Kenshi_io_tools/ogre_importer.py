@@ -220,9 +220,12 @@ def create_submeshes(
     scene_collection = context.scene.collection
     scene_layer = context.view_layer
 
-    for submesh in mesh_data.get_submeshes():
+    submeshes = mesh_data.get_submeshes()
+    submesh_count = len(str(len(submeshes)))
+
+    for submesh in submeshes:
         submesh_index = submesh.index
-        submesh_name = ('{}_{}'.format(mesh_name, submesh_index)
+        submesh_name = ('{}{:0={}}'.format(mesh_name, submesh_index, submesh_count)
                         if use_filename
                         else submesh.encorded_name.decode(select_encoding,
                                                           errors='replace'))
