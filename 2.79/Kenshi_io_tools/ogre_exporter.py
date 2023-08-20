@@ -87,7 +87,8 @@ def set_animations(
             new_scene.objects.link(armature)
             for bone in p_bones:
                 for contraint in bone.constraints:
-                    new_scene.objects.link(contraint.target)
+                    if hasattr(contraint, 'target') and new_scene.objects.find(contraint.target.name) == -1:
+                        new_scene.objects.link(contraint.target)
 
             new_scene.render.fps = fps
             context.scene.frame_step = frame_step
