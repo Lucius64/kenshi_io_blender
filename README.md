@@ -49,14 +49,14 @@ Fixed the following bugs that exist in the official version.
 - Memory leak when importing meshes and skeletons
 - import operator undo not working
 - Crash during UNDO on some versions due to the above
-- Numerous bugs in collider exports
+- Collider export has many bugs
 - Unable to generate convex hull collision in game
 - Missing some keyframes due to #INF and #IND when importing vanilla male animation
 - Vertex colors for alpha channel cannot be imported correctly since official version 0.9.0
-- Since the official version 0.9.0, importing meshes without UV maps and with vertex colors fails.
+- Since the official version 0.9.0, importing meshes without UV maps and with vertex colors fails
 - Smooth shading is not applied to imported meshes since official version 0.9.0
-- When exporting multiple animations, bones without keyframes inherit poses from the previous animation.
-- Exporting a model with non-ASCII characters in object names or material names with Blender 2.92 or lower fails to import for users in different regions or Blender 2.93 or higher.
+- When exporting multiple animations, bones without keyframes inherit poses from the previous animation
+- Exporting a model with non-ASCII characters in object names or material names with Blender 2.92 or lower fails to import for users in different regions or Blender 2.93 or higher
 
 
 ## NOTICE
