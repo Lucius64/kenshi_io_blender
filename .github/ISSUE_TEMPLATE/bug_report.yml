@@ -1,0 +1,43 @@
+name: Bug Report
+description: Add-on bug report
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: addon-version
+    attributes:
+      label: Add-on version
+      placeholder: ex. 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: blender-version
+    attributes:
+      label: Blender version
+      placeholder: ex. 3.6
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce the bug
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: additional-comments
+    attributes:
+      label: Additional comments
