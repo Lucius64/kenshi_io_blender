@@ -1,5 +1,4 @@
 
-from math import sqrt
 import os
 from statistics import mean
 import sys
@@ -10,7 +9,7 @@ import bpy
 from bpy.types import (
     Context,
     Mesh,
-    Object as bpyObject,
+    Object,
     Operator,
     )
 from mathutils import Matrix, Vector
@@ -54,7 +53,7 @@ def set_bone_rotation(context: Context, bones: List[BoneData]):
     scene_layer = context.view_layer
     data_objects = bpy.data.objects
 
-    object_map: Dict[str, bpyObject] = {}
+    object_map: Dict[str, Object] = {}
     for bone in bones:
         obj = data_objects.new(bone.name, None)
         object_map[bone.name] = obj
@@ -81,7 +80,7 @@ def set_bone_rotation(context: Context, bones: List[BoneData]):
 
     for bone in bones:
         obj = object_map.get(bone.name)
-        loc, rot, scale = obj.matrix_world.decompose()
+        _, rot, _ = obj.matrix_world.decompose()
         rotmatAS = rot.to_matrix()
         bone.rotate_matrix_as = rotmatAS
 
@@ -166,11 +165,10 @@ def create_skeleton(
 
 
 def create_mesh(
-        operator: Operator,
         context: Context,
         import_info_log: List[str],
         mesh_data: MeshData,
-        armature: bpyObject,
+        armature: Object,
         bone_map: Dict[str, str],
         mesh_name: str,
         import_normals: bool = True,
@@ -178,45 +176,7 @@ def create_mesh(
         create_materials: bool = True,
         use_filename: bool = False,
         select_encoding='utf-8'):
-    mesh_objects = create_submeshes(operator=operator,
-                                    context=context,
-                                    import_info_log=import_info_log,
-                                    mesh_data=mesh_data,
-                                    armature=armature,
-                                    bone_map=bone_map,
-                                    mesh_name=mesh_name,
-                                    import_normals=import_normals,
-                                    import_shapekeys=import_shapekeys,
-                                    create_materials=create_materials,
-                                    use_filename=use_filename,
-                                    select_encoding=select_encoding)
-
-    if armature:
-        for mesh_object in mesh_objects:
-            print('Move to', armature.location)
-            mesh_object.location = armature.location
-            mesh_object.rotation_euler = armature.rotation_euler
-            mesh_object.rotation_axis_angle = armature.rotation_axis_angle
-            mesh_object.rotation_quaternion = armature.rotation_quaternion
-
-    for mesh_object in mesh_objects:
-        mesh_object.select_set(True)
-
-
-def create_submeshes(
-        operator: Operator,
-        context: Context,
-        import_info_log: List[str],
-        mesh_data: MeshData,
-        armature: bpyObject,
-        bone_map: Dict[int, str],
-        mesh_name: str,
-        import_normals: bool = True,
-        import_shapekeys: bool = True,
-        create_materials: bool = True,
-        use_filename: bool = False,
-        select_encoding: str = 'utf-8') -> List[bpyObject]:
-    mesh_objects: List[bpyObject] = []
+    mesh_objects: List[Object] = []
     scene_collection = context.scene.collection
     scene_layer = context.view_layer
 
@@ -342,7 +302,16 @@ def create_submeshes(
         import_info_log.append('Created mesh {}'.format(submesh_name))
         mesh_objects.append(ob)
 
-    return mesh_objects
+    if armature:
+        for mesh_object in mesh_objects:
+            print('Move to', armature.location)
+            mesh_object.location = armature.location
+            mesh_object.rotation_euler = armature.rotation_euler
+            mesh_object.rotation_axis_angle = armature.rotation_axis_angle
+            mesh_object.rotation_quaternion = armature.rotation_quaternion
+
+    for mesh_object in mesh_objects:
+        mesh_object.select_set(True)
 
 
 def match_face(
@@ -366,12 +335,12 @@ def match_face(
 def create_animation(
         animations: List[AnimationData],
         import_info_log: List[str],
-        rig: bpyObject,
+        armature: Object,
         fps: float = 24.0,
         round_frames: bool = False):
     if len(animations) > 0:
-        rig.animation_data_create()
-        pose_bones = rig.pose.bones
+        armature.animation_data_create()
+        pose_bones = armature.pose.bones
         mat: Dict[str, Matrix3] = {}
         fix1 = Matrix([(1, 0, 0), (0, 0, 1), (0, -1, 0)])
         fix2 = Matrix([(0, 1, 0), (0, 0, 1), (1, 0, 0)])
@@ -384,7 +353,7 @@ def create_animation(
                 ])
 
         actions_new = bpy.data.actions.new
-        tracks_new = rig.animation_data.nla_tracks.new
+        tracks_new = armature.animation_data.nla_tracks.new
         for animation in animations:
             action = actions_new(animation.name)
             import_info_log.append('Created action {}'.format(animation.name))
@@ -491,8 +460,7 @@ def load(operator: Operator,
                 else:
                     operator.report({'WARNING'}, 'Failed to load linked skeleton')
 
-        create_mesh(operator=operator,
-                    context=context,
+        create_mesh(context=context,
                     import_info_log=import_info_log,
                     mesh_data=mesh_data,
                     armature=selected_skeleton,
@@ -512,7 +480,7 @@ def load(operator: Operator,
                 render.fps = fps
             create_animation(animations=skeleton_data.get_animations(),
                              import_info_log=import_info_log,
-                             rig=selected_skeleton,
+                             armature=selected_skeleton,
                              fps=render.fps,
                              round_frames=round_frames)
 
@@ -562,10 +530,10 @@ def load_skeleton(operator: Operator,
 
         if not selected_skeleton:
             skeleton_name = os.path.splitext(skeleton_filename)[0]
-            selected_skeleton, bone_map = create_skeleton(context=context,
-                                                          import_info_log=import_info_log,
-                                                          skeleton_data=skeleton_data,
-                                                          skeleton_name=skeleton_name)
+            selected_skeleton, _ = create_skeleton(context=context,
+                                                   import_info_log=import_info_log,
+                                                   skeleton_data=skeleton_data,
+                                                   skeleton_name=skeleton_name)
 
         if import_animations:
             render = context.scene.render
@@ -575,7 +543,7 @@ def load_skeleton(operator: Operator,
                 render.fps = fps
             create_animation(animations=skeleton_data.get_animations(),
                              import_info_log=import_info_log,
-                             rig=selected_skeleton,
+                             armature=selected_skeleton,
                              fps=render.fps,
                              round_frames=round_frames)
 

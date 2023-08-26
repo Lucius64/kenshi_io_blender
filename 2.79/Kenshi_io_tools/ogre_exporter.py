@@ -8,7 +8,7 @@ from typing import List, Dict, Tuple, Set
 import numpy as np
 import bpy
 import bmesh
-from mathutils import Vector, Matrix, Quaternion
+from mathutils import Matrix
 
 from .util import func_timer
 sys.path.append(os.path.dirname(__file__))
@@ -16,12 +16,11 @@ from Kenshi_blender_tool import *
 
 
 @func_timer
-def set_animations(
+def collect_animations(
         context: bpy.types.Context, 
         export_info_log: List[str],
         skeleton_data: SkeletonData,
         armature: bpy.types.Object,
-        is_visual_keying: bool = False,
         use_scale_keyframe: bool = False):
     bones = skeleton_data.get_bones(has_helper=False)
     if len(bones) == 0:
@@ -44,8 +43,6 @@ def set_animations(
         scene_layer.objects.active = armature
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-
-        target_pose_bones = {}
 
         fix1 = Matrix([
             (1, 0, 0),
@@ -73,7 +70,6 @@ def set_animations(
                 [m[1][0], m[1][1], m[1][2]],
                 [m[2][0], m[2][1], m[2][2]]
                 ])
-            target_pose_bones[bone.name] = p_bone
 
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
         scene_layer.objects.active = prev
@@ -82,58 +78,25 @@ def set_animations(
         fps = context.scene.render.fps
         frame_step = context.scene.frame_step
 
-        if is_visual_keying:
-            new_scene = context.blend_data.scenes.new('bake_work')
-            new_scene.objects.link(armature)
-            for bone in p_bones:
-                for contraint in bone.constraints:
-                    if hasattr(contraint, 'target') and new_scene.objects.find(contraint.target.name) == -1:
-                        new_scene.objects.link(contraint.target)
-
-            new_scene.render.fps = fps
-            context.scene.frame_step = frame_step
-
         for act in sorted(actions, key=lambda action: action.name):
             export_info_log.append('Export action {}'.format(act.name))
             start, end = act.frame_range
             animation = AnimationData()
             animation.name = act.name
             animation.length = (int(end) - int(start)) / fps
-            if is_visual_keying:
-                set_baked_track(scene=new_scene,
-                                action=act,
-                                animation=animation,
-                                armature=armature,
-                                pose_bones=target_pose_bones,
-                                fix_matrix=fix_matrix,
-                                frame_start=start,
-                                frame_end=end,
-                                step=frame_step,
-                                fps=fps,
-                                use_scale_keyframe=use_scale_keyframe)
-            else:
-                set_track(animation=animation,
-                          fcurves=act.fcurves, 
-                          bone_path_map=bone_path_map,
-                          fix_matrix=fix_matrix,
-                          frame_start=start,
-                          frame_end=end,
-                          step=frame_step,
-                          fps=fps,
-                          use_scale_keyframe=use_scale_keyframe)
+            collect_tracks(animation=animation,
+                           fcurves=act.fcurves, 
+                           bone_path_map=bone_path_map,
+                           fix_matrix=fix_matrix,
+                           frame_start=start,
+                           frame_end=end,
+                           step=frame_step,
+                           fps=fps,
+                           use_scale_keyframe=use_scale_keyframe)
             skeleton_data.add_animation(animation)
 
-        if is_visual_keying:
-            bone_conut = len(p_bones)
-            p_bones.foreach_set('location', [0, 0, 0] * bone_conut)
-            p_bones.foreach_set('rotation_quaternion', [1, 0, 0, 0] * bone_conut)
-            p_bones.foreach_set('rotation_euler', [0, 0, 0] * bone_conut)
-            p_bones.foreach_set('scale', [1, 1, 1] * bone_conut)
-            animdata.action = currentAction
-            context.blend_data.scenes.remove(new_scene)
 
-
-def set_track(
+def collect_tracks(
         animation: AnimationData,
         fcurves: bpy.types.ActionFCurves,
         bone_path_map: Dict[str, Tuple[str, str, str]],
@@ -181,9 +144,127 @@ def set_track(
                                          use_scale=use_scale_keyframe)
 
 
-def set_baked_track(
+@func_timer
+def collect_bake_animations(
+        context: bpy.types.Context, 
+        export_info_log: List[str],
+        skeleton_data: SkeletonData,
+        armature: bpy.types.Object,
+        use_scale_keyframe: bool = False):
+    bones = skeleton_data.get_bones(has_helper=False)
+    if len(bones) == 0:
+        return
+
+    scene_layer = context.scene
+    animdata = armature.animation_data
+    if animdata:
+        actions = set() # type: Set[bpy.types.Action]
+        if animdata.nla_tracks:
+            actions = {strip.action for track in animdata.nla_tracks.values() for strip in track.strips.values() if strip.action}
+
+        if animdata.action:
+            actions.add(animdata.action)
+
+        temp_armature = armature.copy() # type: bpy.types.Object
+        temp_scene = context.blend_data.scenes.new('bake_work')
+        try:
+            temp_animdata = temp_armature.animation_data
+            for track in temp_animdata.nla_tracks:
+                temp_animdata.nla_tracks.remove(track)
+            context.scene.objects.link(temp_armature)
+
+            hidden = temp_armature.hide
+            temp_armature.hide = False
+            prev = scene_layer.objects.active
+            scene_layer.objects.active = temp_armature
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+
+            fix1 = Matrix([
+                (1, 0, 0),
+                (0, 0, 1),
+                (0, -1, 0)
+                ])
+            fix2 = Matrix([
+                (0, 1, 0),
+                (0, 0, 1),
+                (1, 0, 0)
+                ])
+            fix_matrix = {}
+            target_pose_bones = {}
+            p_bones = temp_armature.pose.bones
+            e_bones = temp_armature.data.edit_bones
+            for bone in bones:
+                p_bone = p_bones[bone.name]
+                e_bone = e_bones[bone.name]
+                m = fix2 * e_bone.parent.matrix.to_3x3().transposed() * e_bone.matrix.to_3x3() if e_bone.parent else fix1 *  e_bone.matrix.to_3x3()
+                fix_matrix[bone.name] = Matrix3([
+                    [m[0][0], m[0][1], m[0][2]],
+                    [m[1][0], m[1][1], m[1][2]],
+                    [m[2][0], m[2][1], m[2][2]]
+                    ])
+                target_pose_bones[bone.name] = p_bone
+
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            scene_layer.objects.active = prev
+            temp_armature.hide = hidden
+
+            fps = context.scene.render.fps
+            frame_step = context.scene.frame_step
+
+            bone_conut = len(p_bones)
+            init_vector_zeros = [0, 0, 0] * bone_conut
+            init_quaternions = [1, 0, 0, 0] * bone_conut
+            init_vector_ones = [1, 1, 1] * bone_conut
+
+            temp_scene_layer = temp_scene
+            temp_scene.objects.link(temp_armature)
+            for bone in p_bones:
+                for contraint in bone.constraints:
+                    if hasattr(contraint, 'target') and temp_scene.objects.find(contraint.target.name) == -1:
+                        temp_scene.objects.link(contraint.target)
+
+            temp_scene.render.fps = fps
+            temp_scene.frame_step = frame_step
+
+            p_bones_foreach_set = p_bones.foreach_set
+            for act in sorted(actions, key=lambda action: action.name):
+                export_info_log.append('Export action {}'.format(act.name))
+                start, end = act.frame_range
+                animation = AnimationData()
+                animation.name = act.name
+                animation.length = (int(end) - int(start)) / fps
+
+                p_bones_foreach_set('location', init_vector_zeros)
+                p_bones_foreach_set('rotation_quaternion', init_quaternions)
+                p_bones_foreach_set('rotation_euler', init_vector_zeros)
+                p_bones_foreach_set('scale', init_vector_ones)
+                temp_animdata.action = act
+                temp_scene_layer.update()
+
+                collect_bake_tracks(scene=temp_scene,
+                                    animation=animation,
+                                    armature=temp_armature,
+                                    pose_bones=target_pose_bones,
+                                    fix_matrix=fix_matrix,
+                                    frame_start=start,
+                                    frame_end=end,
+                                    step=frame_step,
+                                    fps=fps,
+                                    use_scale_keyframe=use_scale_keyframe)
+                skeleton_data.add_animation(animation)
+
+            p_bones_foreach_set('location', init_vector_zeros)
+            p_bones_foreach_set('rotation_quaternion', init_quaternions)
+            p_bones_foreach_set('rotation_euler', init_vector_zeros)
+            p_bones_foreach_set('scale', init_vector_ones)
+        finally:
+            context.blend_data.scenes.remove(temp_scene)
+            bpy.data.objects.remove(temp_armature)
+
+
+def collect_bake_tracks(
         scene: bpy.types.Scene,
-        action: bpy.types.Action,
         animation: AnimationData,
         armature: bpy.types.Object,
         pose_bones: Dict[str, bpy.types.PoseBone],
@@ -193,25 +274,21 @@ def set_baked_track(
         step: int = 1,
         fps: int = 24,
         use_scale_keyframe: bool = False):
+    armature_convert_space = armature.convert_space
     start = int(frame_start)
     end = int(frame_end) + 1
-    pbones = armature.pose.bones
-    bone_conut = len(pbones)
-    pbones.foreach_set('location', [0, 0, 0] * bone_conut)
-    pbones.foreach_set('rotation_quaternion', [1, 0, 0, 0] * bone_conut)
-    pbones.foreach_set('rotation_euler', [0, 0, 0] * bone_conut)
-    pbones.foreach_set('scale', [1, 1, 1] * bone_conut)
-    armature.animation_data.action = action
 
     times = [] # type: List[float]
+    times_append = times.append
     matrix_dict = {name: [] for name in pose_bones.keys()} # type: Dict[str, List[List[float]]]
+    pose_bones_items = pose_bones.items()
+    scene_frame_set = scene.frame_set
 
     for frame in range(start, end, step):
-        scene.frame_set(frame)
-        scene.update()
-        times.append((frame - start) / fps)
-        for name, pbone in pose_bones.items():
-            mat = armature.convert_space(pose_bone=pbone,
+        scene_frame_set(frame)
+        times_append((frame - start) / fps)
+        for name, pbone in pose_bones_items:
+            mat = armature_convert_space(pose_bone=pbone,
                                          matrix=pbone.matrix,
                                          from_space='POSE',
                                          to_space='LOCAL')
@@ -222,7 +299,7 @@ def set_baked_track(
                                    use_scale=use_scale_keyframe)
 
 
-def set_mesh(
+def collect_mesh(
         context: bpy.types.Context,
         export_info_log: List[str],
         mesh_data: MeshData,
@@ -360,7 +437,7 @@ def set_mesh(
     mesh_data.set_submeshes(submesh_array)
 
 
-def set_bones(
+def collect_bones(
         export_info_log: List[str],
         mesh_data: MeshData,
         skeleton_data: SkeletonData,
@@ -475,30 +552,30 @@ def save(
         if export_skeleton and armature:
             skeleton_data = serializer.create_skeleton(skel_filename)
 
-        set_bones(export_info_log=export_info_log,
-                  mesh_data=mesh_data,
-                  skeleton_data=skeleton_data,
-                  armature=armature,
-                  export_all_bones=export_all_bones)
+        collect_bones(export_info_log=export_info_log,
+                      mesh_data=mesh_data,
+                      skeleton_data=skeleton_data,
+                      armature=armature,
+                      export_all_bones=export_all_bones)
 
-        set_mesh(context=context,
-                 export_info_log=export_info_log,
-                 mesh_data=mesh_data,
-                 selected_objects=selectedObjects,
-                 applyModifiers=apply_modifiers,
-                 export_color=export_colour,
-                 tangent_format=tangent_format,
-                 export_poses=export_poses,
-                 optimize=mesh_optimize)
+        collect_mesh(context=context,
+                     export_info_log=export_info_log,
+                     mesh_data=mesh_data,
+                     selected_objects=selectedObjects,
+                     applyModifiers=apply_modifiers,
+                     export_color=export_colour,
+                     tangent_format=tangent_format,
+                     export_poses=export_poses,
+                     optimize=mesh_optimize)
 
         if skeleton_data:
             if export_animation:
-                set_animations(context=context,
-                               export_info_log=export_info_log,
-                               skeleton_data=skeleton_data,
-                               armature=armature,
-                               is_visual_keying=is_visual_keying,
-                               use_scale_keyframe=use_scale_keyframe)
+                collect_anim_func = collect_bake_animations if is_visual_keying else collect_animations
+                collect_anim_func(context=context,
+                                  export_info_log=export_info_log,
+                                  skeleton_data=skeleton_data,
+                                  armature=armature,
+                                  use_scale_keyframe=use_scale_keyframe)
             mesh_data.set_linked_skeleton_name(skel_filename)
 
         serializer.save_mesh(mesh_data, filepath, mesh_version)
@@ -511,9 +588,6 @@ def save(
         operator.report({'INFO'}, 'Export successful')
 
     except:
-        work_scene = context.blend_data.scenes.get('bake_work')
-        if work_scene:
-            context.blend_data.scenes.remove(work_scene)
         err_mes = traceback.format_exc()
         print(err_mes)
         operator.report({'ERROR'}, 'Export error!\n{}'.format(err_mes))
@@ -568,24 +642,24 @@ def save_skeleton(
                                 'kenshi_io_OGRE.log')
         serializer = KenshiObjectSerializer(logfile=log_file)
 
-        folder, skeleton_filename = os.path.split(filepath)
+        _, skeleton_filename = os.path.split(filepath)
         skeleton_data = serializer.create_skeleton(skeleton_filename)
 
         armature = selectedObjects[0]
-        set_bones(export_info_log=export_info_log,
-                  mesh_data=None,
-                  skeleton_data=skeleton_data,
-                  armature=armature,
-                  export_all_bones=export_all_bones)
+        collect_bones(export_info_log=export_info_log,
+                      mesh_data=None,
+                      skeleton_data=skeleton_data,
+                      armature=armature,
+                      export_all_bones=export_all_bones)
 
         if armature:
             if export_animation:
-                set_animations(context=context,
-                               export_info_log=export_info_log,
-                               skeleton_data=skeleton_data,
-                               armature=armature,
-                               is_visual_keying=is_visual_keying,
-                               use_scale_keyframe=use_scale_keyframe)
+                collect_anim_func = collect_bake_animations if is_visual_keying else collect_animations
+                collect_anim_func(context=context,
+                                  export_info_log=export_info_log,
+                                  skeleton_data=skeleton_data,
+                                  armature=armature,
+                                  use_scale_keyframe=use_scale_keyframe)
             serializer.save_skeleton(skeleton_data, filepath, skeleton_version)
 
         print('\n'.join(export_info_log))
@@ -593,9 +667,6 @@ def save_skeleton(
         operator.report({'INFO'}, 'Export successful')
 
     except:
-        work_scene = context.blend_data.scenes.get('bake_work')
-        if work_scene:
-            context.blend_data.scenes.remove(work_scene)
         err_mes = traceback.format_exc()
         print(err_mes)
         operator.report({'ERROR'}, 'Export error!\n{}'.format(err_mes))
