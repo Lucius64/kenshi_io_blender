@@ -283,8 +283,8 @@ def createConvexCollision(
             points = xml_points.text.split(' ')
             triangles = xml_triangles.text.split(' ')
 
-            verts = [points[i:i + 3] for i in range(0, len(points), 3)]
-            faces = [triangles[i:i + 3] for i in range(0, len(triangles), 3)]
+            verts = [[float(points[i]), float(points[i + 1]), float(points[i + 2])] for i in range(0, len(points), 3)]
+            faces = [[int(triangles[i]), int(triangles[i + 1]), int(triangles[i + 2])] for i in range(0, len(triangles), 3)]
 
         if (len(verts) == 0
                 and len(faces) == 0
@@ -340,8 +340,8 @@ def createMeshCollision(
             points = xml_points.text.split(' ')
             triangles = xml_triangles.text.split(' ')
 
-            verts = [points[i:i + 3] for i in range(0, len(points), 3)]
-            faces = [triangles[i:i + 3] for i in range(0, len(triangles), 3)]
+            verts = [[float(points[i]), float(points[i + 1]), float(points[i + 2])] for i in range(0, len(points), 3)]
+            faces = [[int(triangles[i]), int(triangles[i + 1]), int(triangles[i + 2])] for i in range(0, len(triangles), 3)]
 
         if (len(verts) == 0
                 and len(faces) == 0
