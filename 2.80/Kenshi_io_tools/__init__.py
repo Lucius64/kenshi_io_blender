@@ -3,7 +3,7 @@ bl_info = {
     "name": "Kenshi IO Tools (mesh, skeleton, collision)",
     "author": "Lucius",
     "blender": (2, 80, 0),
-    "version": (1, 0, 3),
+    "version": (1, 0, 4),
     "location": "File > Import-Export",
     "description": ("Import-Export Kenshi Model and collision files."),
     "warning": "",
@@ -147,7 +147,8 @@ class KENSHI_OT_ExportOgreObject(Operator, ExportHelper):
     tangent_format: EnumProperty(
         name='Tangent format',
         description='',
-        items=[('TANGENT_3', 'tangent & binormal', 'Export tangent and binormal.'),
+        items=[('ALL', 'tangent & binormal & sign', 'Export tangent and bitangent\'s signs and binormal (before multiplying by sign).'),
+               ('TANGENT_3', 'tangent & binormal', 'Export tangent and binormal.'),
                ('TANGENT_4', 'tangent & bitangent sign', 'Export tangent and bitangent\'s signs.\nCompute the binormals at runtime.'),
                ('TANGENT_0', 'no tangent', 'Select if there is no UV map.'),
                ],

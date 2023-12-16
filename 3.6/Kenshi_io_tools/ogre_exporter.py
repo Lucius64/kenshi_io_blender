@@ -355,13 +355,11 @@ def collect_mesh(
         mesh.loops.foreach_get('normal', nd_normals)
 
         nd_texcoords = np.empty(2, dtype=np.float32)
-        for attr in mesh.attributes:
-            if attr.domain == 'CORNER' and attr.data_type == 'FLOAT2':
-                nd_texcoords = np.empty(loop_count * 2, dtype=np.float32)
-                attr.data.foreach_get('vector', nd_texcoords)
-                break
+        if mesh.uv_layers.active :
+            nd_texcoords = np.empty(loop_count * 2, dtype=np.float32)
+            mesh.attributes[mesh.uv_layers.active.name].data.foreach_get('vector', nd_texcoords)
 
-        tangent_dimensions = 4 if tangent_format == 'TANGENT_4' else 3
+        tangent_dimensions = 4 if tangent_format == 'TANGENT_4' or tangent_format == 'ALL' else 3
         if tangent_format != 'TANGENT_0':
             nd_tangents = np.empty(loop_count * 3, dtype=np.float32)
             mesh.loops.foreach_get('tangent', nd_tangents)
@@ -371,6 +369,11 @@ def collect_mesh(
 
             nd_bitangents = np.empty(loop_count * 3, dtype=np.float32)
             mesh.loops.foreach_get('bitangent', nd_bitangents)
+
+            if tangent_format == 'ALL':
+                nd_bitangents = nd_bitangents.reshape(-1, 3) * nd_bitangent_signs.reshape(-1, 1)
+            elif tangent_format == 'TANGENT_4':
+                nd_bitangents = np.empty(3, dtype=np.float32)
         else:
             nd_tangents = np.empty(3, dtype=np.float32)
             nd_bitangent_signs = np.empty(1, dtype=np.float32)
