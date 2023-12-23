@@ -350,30 +350,40 @@ def collect_mesh(
 
         nd_positions = np.empty(vertex_count * 3, dtype=np.float32)
         mesh.vertices.foreach_get('co', nd_positions)
+        nd_positions = nd_positions.reshape(-1, 3)
 
         nd_normals = np.empty(loop_count * 3, dtype=np.float32)
         mesh.loops.foreach_get('normal', nd_normals)
+        nd_normals = nd_normals.reshape(-1, 3)
 
-        nd_texcoords = np.empty(2, dtype=np.float32)
-        if mesh.uv_layers.active :
+        uv_name = mesh.uv_layers.active.name if mesh.uv_layers.active else None
+        if uv_name:
             nd_texcoords = np.empty(loop_count * 2, dtype=np.float32)
-            mesh.attributes[mesh.uv_layers.active.name].data.foreach_get('vector', nd_texcoords)
+            mesh.attributes[uv_name].data.foreach_get('vector', nd_texcoords)
+            nd_texcoords = nd_texcoords.reshape(-1, 2)
+        else:
+            nd_texcoords = np.empty(2, dtype=np.float32)
 
-        tangent_dimensions = 4 if tangent_format == 'TANGENT_4' or tangent_format == 'ALL' else 3
+        tangent_dimensions = 4 if tangent_format == 'TANGENT_4' or tangent_format == 'ALL' or tangent_format == 'FLIPPED' else 3
         if tangent_format != 'TANGENT_0':
             nd_tangents = np.empty(loop_count * 3, dtype=np.float32)
             mesh.loops.foreach_get('tangent', nd_tangents)
+            nd_tangents = nd_tangents.reshape(-1, 3)
 
             nd_bitangent_signs = np.empty(loop_count, dtype=np.float32)
             mesh.loops.foreach_get('bitangent_sign', nd_bitangent_signs)
 
             nd_bitangents = np.empty(loop_count * 3, dtype=np.float32)
             mesh.loops.foreach_get('bitangent', nd_bitangents)
+            nd_bitangents = nd_bitangents.reshape(-1, 3)
 
             if tangent_format == 'ALL':
-                nd_bitangents = nd_bitangents.reshape(-1, 3) * nd_bitangent_signs.reshape(-1, 1)
+                nd_bitangents = nd_bitangents * nd_bitangent_signs.reshape(-1, 1)
             elif tangent_format == 'TANGENT_4':
                 nd_bitangents = np.empty(3, dtype=np.float32)
+            elif tangent_format == 'FLIPPED':
+                nd_bitangents = -nd_bitangents * nd_bitangent_signs.reshape(-1, 1)
+                nd_bitangent_signs = -nd_bitangent_signs
         else:
             nd_tangents = np.empty(3, dtype=np.float32)
             nd_bitangent_signs = np.empty(1, dtype=np.float32)
@@ -387,23 +397,25 @@ def collect_mesh(
                 if not k.lower().startswith('alpha') and v.domain == 'CORNER' and v.data_type == 'BYTE_COLOR':
                     nd_colors = np.empty(loop_count * 4, dtype=np.float32)
                     v.data.foreach_get('color_srgb', nd_colors)
+                    nd_colors = nd_colors.reshape(-1, 4)
                     break
             for k, v in vertex_colors:
                 if k.lower().startswith('alpha') and v.domain == 'CORNER' and v.data_type == 'BYTE_COLOR':
                     nd_alphas = np.empty(loop_count * 4, dtype=np.float32)
                     v.data.foreach_get('color_srgb', nd_alphas)
+                    nd_alphas = nd_alphas.reshape(-1, 4)
                     break
 
         out_nd_indices = submesh.set_vertex(nd_vert_indices=nd_vert_indices,
                                             nd_loop_indices=nd_loop_indices,
-                                            nd_positions=nd_positions.reshape(-1, 3),
-                                            nd_normals=nd_normals.reshape(-1, 3),
-                                            nd_tangents=nd_tangents.reshape(-1, 3),
+                                            nd_positions=nd_positions,
+                                            nd_normals=nd_normals,
+                                            nd_tangents=nd_tangents,
                                             nd_bitangent_signs=nd_bitangent_signs,
-                                            nd_bitangents=nd_bitangents.reshape(-1, 3),
-                                            nd_texcoords=nd_texcoords.reshape(-1, 2),
-                                            nd_colors=nd_colors.reshape(-1, 4),
-                                            nd_alphas=nd_alphas.reshape(-1, 4),
+                                            nd_bitangents=nd_bitangents,
+                                            nd_texcoords=nd_texcoords,
+                                            nd_colors=nd_colors,
+                                            nd_alphas=nd_alphas,
                                             tangent_dimensions=tangent_dimensions,
                                             optimize=optimize)
 

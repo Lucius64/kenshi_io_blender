@@ -3,7 +3,7 @@ bl_info = {
     "name": "Kenshi IO Tools (mesh, skeleton, collision)",
     "author": "Lucius",
     "blender": (2, 79, 0),
-    "version": (1, 0, 4),
+    "version": (1, 1, 0),
     "location": "File > Import-Export",
     "description": ("Import-Export Kenshi Model and collision files."),
     "warning": "",
@@ -147,12 +147,13 @@ class KENSHI_OT_ExportOgreObject(Operator, ExportHelper):
     tangent_format = EnumProperty(
         name='Tangent format',
         description='',
-        items=[('ALL', 'tangent & binormal & sign', 'Export tangent and bitangent\'s signs and binormal (before multiplying by sign).'),
-               ('TANGENT_3', 'tangent & binormal', 'Export tangent and binormal.'),
-               ('TANGENT_4', 'tangent & bitangent sign', 'Export tangent and bitangent\'s signs.\nCompute the binormals at runtime.'),
-               ('TANGENT_0', 'no tangent', 'Select if there is no UV map.'),
+        items=[('ALL', 'tangent & binormal & sign', 'Export tangent and binormal\'s signs and binormal (before multiplying by sign).\nCompatible with most shaders'),
+               ('FLIPPED', 'tangent & binormal(flip) & sign(flip)', 'For armors, robot limbs, backpacks.\nIcon and not equipped shaders will also be correctly oriented Binormal'),
+               ('TANGENT_3', 'tangent & binormal', 'Export tangent and binormal.\nFor characters, armors, etc'),
+               ('TANGENT_4', 'tangent & sign', 'Export tangent and binormal\'s signs.\nCompute the binormals at runtime.\nFor weapons, buildings, etc'),
+               ('TANGENT_0', 'no tangent', 'Select if there is no UV map'),
                ],
-        default='TANGENT_3',
+        default='ALL',
         )
     export_colour = BoolProperty(
         name='Export vertex colour',
