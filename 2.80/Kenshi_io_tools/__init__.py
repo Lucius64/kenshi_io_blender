@@ -3,7 +3,7 @@ bl_info = {
     "name": "Kenshi IO Tools (mesh, skeleton, collision)",
     "author": "Lucius",
     "blender": (2, 80, 0),
-    "version": (1, 1, 0),
+    "version": (1, 1, 1),
     "location": "File > Import-Export",
     "description": ("Import-Export Kenshi Model and collision files."),
     "warning": "",

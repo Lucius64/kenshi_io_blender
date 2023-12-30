@@ -300,6 +300,7 @@ def collect_bake_tracks(
 
 
 def collect_mesh(
+        operator: bpy.types.Operator,
         context: bpy.types.Context,
         export_info_log: List[str],
         mesh_data: MeshData,
@@ -441,6 +442,12 @@ def collect_mesh(
                                                group.weight)
                                                for vert in mesh.vertices
                                                for group in vert.groups]
+
+        for ba in bone_assignments:
+            if ba.bone_index >= 65535:
+                operator.report({'WARNING'}, 'Invalid vertex group detected. Check for bones and OGREID')
+                break
+
         submesh.set_bone_assignments(bone_assignments, out_nd_indices)
 
         temp_object.to_mesh_clear()
@@ -456,7 +463,8 @@ def collect_bones(
         mesh_data: MeshData,
         skeleton_data: SkeletonData,
         armature: bpy.types.Object,
-        export_all_bones: bool = False):
+        export_all_bones: bool = False,
+        export_skeleton: bool = False):
 
     bones: List[BoneData] = []
     if armature:
@@ -491,6 +499,11 @@ def collect_bones(
 
             export_info_log.append('Export bone {} {}'.format(id, bone.name))
             bones.append(old_bone)
+
+        if export_skeleton:
+            for i, bone in enumerate(sorted(bones, key=lambda bone: bone.id)): # Renumbering bone ID
+                bone.id = i
+                export_info_log.append('Renumbering bone {} {}'.format(i, bone.name))
 
         if skeleton_data:
             skeleton_data.set_bones(bones)
@@ -565,14 +578,18 @@ def save(
         skeleton_data = None
         if export_skeleton and armature:
             skeleton_data = serializer.create_skeleton(skel_filename)
+        else:
+            export_skeleton = False
 
         collect_bones(export_info_log=export_info_log,
                       mesh_data=mesh_data,
                       skeleton_data=skeleton_data,
                       armature=armature,
-                      export_all_bones=export_all_bones)
+                      export_all_bones=export_all_bones,
+                      export_skeleton=export_skeleton)
 
-        collect_mesh(context=context,
+        collect_mesh(operator=operator,
+                     context=context,
                      export_info_log=export_info_log,
                      mesh_data=mesh_data,
                      selected_objects=selectedObjects,
@@ -664,7 +681,8 @@ def save_skeleton(
                       mesh_data=None,
                       skeleton_data=skeleton_data,
                       armature=armature,
-                      export_all_bones=export_all_bones)
+                      export_all_bones=export_all_bones,
+                      export_skeleton=True)
 
         if armature:
             if export_animation:
