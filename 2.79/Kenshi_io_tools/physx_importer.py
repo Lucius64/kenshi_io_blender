@@ -408,6 +408,7 @@ def load(
 
                 if actor_desc.find('NxTriangleMeshShapeDesc') is not None:
                     createMeshCollision(actor_desc, physics_collection, physx)
+        operator.report({'INFO'}, 'Import successful')
 
     except:
         err_mes = traceback.format_exc()

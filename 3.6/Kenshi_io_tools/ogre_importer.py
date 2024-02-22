@@ -265,7 +265,8 @@ def create_mesh(
                     me.shape_keys.key_blocks[name].data.foreach_set('co', pose.ravel())
 
         me.update(calc_edges=True)
-        me.use_auto_smooth = True
+        if hasattr(me, 'use_auto_smooth'):
+            me.use_auto_smooth = True
 
         bpy.ops.object.editmode_toggle()
         bpy.ops.mesh.remove_doubles(threshold=0.001)

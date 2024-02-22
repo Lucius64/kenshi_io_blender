@@ -349,6 +349,7 @@ def save(
             with open(filepath, 'wb') as f:
                 f.write(bytes(data,'utf-8'))
                 f.close()
+        operator.report({'INFO'}, 'Import successful')
 
     except:
         err_mes = traceback.format_exc()

@@ -102,7 +102,8 @@ def create_mesh(
 
     mesh_data.from_pydata(verts, edges, faces)
     mesh_data.update(calc_edges=True)
-    mesh_data.use_auto_smooth = True
+    if hasattr(mesh_data, 'use_auto_smooth'):
+        mesh_data.use_auto_smooth = True
 
     prev_active = layer.objects.active
     layer.objects.active = ob
@@ -408,6 +409,7 @@ def load(
 
                 if actor_desc.find('NxTriangleMeshShapeDesc') is not None:
                     createMeshCollision(actor_desc, physics_collection, physx)
+        operator.report({'INFO'}, 'Import successful')
 
     except:
         err_mes = traceback.format_exc()

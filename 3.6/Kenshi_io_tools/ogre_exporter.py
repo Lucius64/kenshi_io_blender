@@ -337,7 +337,7 @@ def collect_mesh(
 
         if tangent_format != 'TANGENT_0':
             mesh.calc_tangents(uvmap = mesh.uv_layers.active.name)
-        else:
+        elif hasattr(mesh, 'calc_normals_split'):
             mesh.calc_normals_split()
 
         loop_count = len(mesh.loops)
