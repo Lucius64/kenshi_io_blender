@@ -254,6 +254,8 @@ def create_mesh(
             if len(shape_keys) > 0:
                 shape_key_add(name='Basis')
                 for name, pose in shape_keys:
+                    if name.startswith('fake_pose'):
+                        continue
                     import_info_log.append('Created pose {}'.format(name))
                     shape_key_add(name=name)
                     me.shape_keys.key_blocks[name].data.foreach_set('co', pose.ravel())

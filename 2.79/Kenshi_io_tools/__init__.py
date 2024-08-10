@@ -3,7 +3,7 @@ bl_info = {
     "name": "Kenshi IO Tools (mesh, skeleton, collision)",
     "author": "Lucius",
     "blender": (2, 79, 0),
-    "version": (1, 1, 2),
+    "version": (1, 2, 0),
     "location": "File > Import-Export",
     "description": ("Import-Export Kenshi Model and collision files."),
     "warning": "",
@@ -30,7 +30,7 @@ import os
 
 import bpy
 from bpy.types import Operator, INFO_MT_file_import, INFO_MT_file_export, Scene
-from bpy.props import BoolProperty, StringProperty, EnumProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bpy.utils import register_class, unregister_class, previews
 
@@ -152,6 +152,7 @@ class KENSHI_OT_ExportOgreObject(Operator, ExportHelper):
                ('TANGENT_3', 'tangent & binormal', 'Export tangent and binormal.\nFor characters, armors, etc'),
                ('TANGENT_4', 'tangent & sign', 'Export tangent and binormal\'s signs.\nCompute the binormals at runtime.\nFor weapons, buildings, etc'),
                ('TANGENT_0', 'no tangent', 'Select if there is no UV map'),
+               ('ZERO', 'zero vector', 'For unloaded interiors'),
                ],
         default='ALL',
         )
@@ -218,6 +219,8 @@ so it's a good idea to pre-bake the animation and uncheck this option''',
 
     def execute(self, context):
         keywords = self.as_keywords(ignore=('check_existing', 'filter_glob'))
+        prefs = context.preferences.addons[__name__].preferences
+        keywords['num_fake_pose'] = prefs.num_fake_pose
         bpy.context.window.cursor_set('WAIT')
         result = ogre_exporter.save(self, context, **keywords)
         bpy.context.window.cursor_set('DEFAULT')
@@ -428,8 +431,9 @@ class KENSHI_OT_ExportPhysXObject(Operator, ExportHelper):
         name='Transform',
         description='Root transformation',
         items=[('SCENE', 'Scene', 'Export objects relative to scene origin'),
-               ('PARENT', 'Parent', 'Export objects relative to common parent'),
+               ('PARENT', 'Common Parent', 'Export objects relative to common parent'),
                ('ACTIVE', 'Active', 'Export objects relative to the active object'),
+               ('OWN_PARENT', 'Parent', 'Export objects relative to parent'),
                ],
         default='PARENT',
         )
@@ -459,6 +463,24 @@ class KENSHI_OT_ExportPhysXObject(Operator, ExportHelper):
         row = layout.row()
         row.template_icon_view(context.scene, "physx_logo")
         layout.label(text='PhysX Technology provided under license from NVIDIA Corporation. © 2002-2011 NVIDIA Corporation. All rights reserved.')
+
+
+class KENSHI_IO_Preferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
+
+    num_fake_pose = IntProperty(
+        name='contain fake shape keys',
+        description='exporting mesh contains fake_pose1, fake_pose2, ...',
+        min=0,
+        max=5,
+        default=0,
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        sp = layout.split(factor=0.3)
+        col = sp.column()
+        col.prop(self, 'num_fake_pose')
 
 
 def menu_func_import(self, context):
@@ -496,7 +518,8 @@ classes = (KENSHI_OT_ImportOgreObject,
            KENSHI_OT_ImportOgreSkeletonObject,
            KENSHI_OT_ExportOgreSkeletonObject,
            KENSHI_OT_ImportPhysXObject,
-           KENSHI_OT_ExportPhysXObject)
+           KENSHI_OT_ExportPhysXObject,
+           KENSHI_IO_Preferences)
 
 preview_collections = {}
 

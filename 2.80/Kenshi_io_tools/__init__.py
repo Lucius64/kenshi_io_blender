@@ -3,7 +3,7 @@ bl_info = {
     "name": "Kenshi IO Tools (mesh, skeleton, collision)",
     "author": "Lucius",
     "blender": (2, 80, 0),
-    "version": (1, 1, 2),
+    "version": (1, 2, 0),
     "location": "File > Import-Export",
     "description": ("Import-Export Kenshi Model and collision files."),
     "warning": "",
@@ -30,7 +30,7 @@ import os
 
 import bpy
 from bpy.types import Operator, TOPBAR_MT_file_import, TOPBAR_MT_file_export, Scene
-from bpy.props import BoolProperty, StringProperty, EnumProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bpy.utils import register_class, unregister_class, previews
 
@@ -52,27 +52,27 @@ class KENSHI_OT_ImportOgreObject(Operator, ImportHelper):
         name='Import Normals',
         description='Import vertex normals (split normals)',
         default=True,
-        )
+        ) # type: ignore
     import_animations: BoolProperty(
         name='Import animation',
         description='Import skeletal animations as actions',
         default=True,
-        )
+        ) # type: ignore
     round_frames: BoolProperty(
         name='Adjust frame rate',
         description='Adjust scene frame rate to match imported animation',
         default=True,
-        )
+        ) # type: ignore
     import_shapekeys: BoolProperty(
         name='Import shape keys',
         description='Import shape keys (morphs)',
         default=True,
-        )
+        ) # type: ignore
     create_materials: BoolProperty(
         name='Create materials',
         description='Create materials (name only)',
         default=False,
-        )
+        ) # type: ignore
     use_selected_skeleton: BoolProperty(
         name='Use selected armature',
         description='''Link with selected armature when importing mesh.
@@ -81,22 +81,22 @@ Use this when importing gear meshes that don't have their own skeleton.
 Make sure the correct armature is selected.
 Weightmaps can get mixed up if not selected''',
         default=False,
-        )
+        ) # type: ignore
     select_encoding: EnumProperty(
         name='Encoding',
         description='If characters are not displayed correctly, try changing the character code',
         items=code_page_list(),
         default='utf-8',
-        )
+        ) # type: ignore
     use_filename: BoolProperty(
         name='Determine mesh name from file name',
         description="mesh name will be 'filename_number'",
         default=True,
-        )
+        ) # type: ignore
     filter_glob: StringProperty(
         default='*.mesh;*.MESH',
         options={'HIDDEN'},
-        )
+        ) # type: ignore
 
     def execute(self, context):
         keywords = self.as_keywords(ignore=('filter_glob',))
@@ -143,7 +143,7 @@ class KENSHI_OT_ExportOgreObject(Operator, ExportHelper):
                ('V_1_4', 'version 1.4', 'Scythe Physics Editor compatible version'),
                ],
         default='V_1_10',
-        )
+        ) # type: ignore
     tangent_format: EnumProperty(
         name='Tangent format',
         description='',
@@ -152,65 +152,66 @@ class KENSHI_OT_ExportOgreObject(Operator, ExportHelper):
                ('TANGENT_3', 'tangent & binormal', 'Export tangent and binormal.\nFor characters, armors, etc'),
                ('TANGENT_4', 'tangent & sign', 'Export tangent and binormal\'s signs.\nCompute the binormals at runtime.\nFor weapons, buildings, etc'),
                ('TANGENT_0', 'no tangent', 'Select if there is no UV map'),
+               ('ZERO', 'zero vector', 'For unloaded interiors'),
                ],
         default='ALL',
-        )
+        ) # type: ignore
     export_colour: BoolProperty(
         name='Export vertex colour',
         description="Export vertex colour data.\nName a colour layer 'Alpha' to use as the alpha component",
         default=False,
-        )
+        ) # type: ignore
     apply_transform: BoolProperty(
         name='Apply Transform',
         description="Applies object's transformation to its data",
         default=False,
-        )
+        ) # type: ignore
     apply_modifiers: BoolProperty(
         name='Apply Modifiers',
         description='Applies modifiers to the mesh',
         default=False,
-        )
+        ) # type: ignore
     export_poses: BoolProperty(
         name='Export shape keys',
         description='Export shape keys as poses',
         default=False,
-        )
+        ) # type: ignore
     mesh_optimize: BoolProperty(
         name='Optimize mesh',
         description='Remove duplicate vertices.\nThe conditions for duplication are that they have the same position, normal, tangent, bitangent, texture coordinates, and color',
         default=True,
-        )
+        ) # type: ignore
     export_skeleton: BoolProperty(
         name='Export skeleton',
         description='Exports new skeleton and links the mesh to this new skeleton.\nLeave off to link with existing skeleton if applicable.',
         default=False,
-        )
+        ) # type: ignore
     export_animation: BoolProperty(
         name="Export Animation",
         description='Export all actions attached to the selected skeleton as animations',
         default=False,
-        )
+        ) # type: ignore
     export_all_bones: BoolProperty(
         name="Include bones with undefined IDs",
         description="Export all bones.\nVertex weights and skeletal animation are also covered.",
         default=False,
-        )
+        ) # type: ignore
     is_visual_keying: BoolProperty(
         name='Visual Keying',
         description='''Set keyframes based on visuals.
 More frames will slow down the export,
 so it's a good idea to pre-bake the animation and uncheck this option''',
         default=False,
-        )
+        ) # type: ignore
     use_scale_keyframe: BoolProperty(
         name='Apply scale',
         description='Set scale keyframes in the animation',
         default=False,
-        )
+        ) # type: ignore
     filter_glob: StringProperty(
         default='*.mesh;*.MESH',
         options={'HIDDEN'},
-        )
+        ) # type: ignore
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -218,6 +219,8 @@ so it's a good idea to pre-bake the animation and uncheck this option''',
 
     def execute(self, context):
         keywords = self.as_keywords(ignore=('check_existing', 'filter_glob'))
+        prefs = context.preferences.addons[__name__].preferences
+        keywords['num_fake_pose'] = prefs.num_fake_pose
         bpy.context.window.cursor_set('WAIT')
         result = ogre_exporter.save(self, context, **keywords)
         bpy.context.window.cursor_set('DEFAULT')
@@ -260,21 +263,21 @@ class KENSHI_OT_ImportOgreSkeletonObject(Operator, ImportHelper):
         name='Import animation',
         description='Import skeletal animations as actions',
         default=True,
-        )
+        ) # type: ignore
     round_frames: BoolProperty(
         name='Adjust frame rate',
         description='Adjust scene frame rate to match imported animation',
         default=True,
-        )
+        ) # type: ignore
     use_selected_skeleton: BoolProperty(
         name='Use selected armature',
         description='Link animation to selected armature object',
         default=False,
-        )
+        ) # type: ignore
     filter_glob: StringProperty(
         default='*.skeleton;*.SKELETON',
         options={'HIDDEN'},
-        )
+        ) # type: ignore
 
     def execute(self, context):
         keywords = self.as_keywords(ignore=('filter_glob',))
@@ -310,38 +313,38 @@ class KENSHI_OT_ExportOgreSkeletonObject(Operator, ExportHelper):
                ('V_1_4', 'version 1.4', 'Scythe Physics Editor compatible version'),
                ],
         default='V_1_10',
-        )
+        ) # type: ignore
     apply_transform: BoolProperty(
         name='Apply Transform',
         description="Applies object's transformation to its data",
         default=False,
-        )
+        ) # type: ignore
     export_animation: BoolProperty(
         name="Export Animation",
         description='Export all actions attached to the selected skeleton as animations',
         default=False,
-        )
+        ) # type: ignore
     export_all_bones: BoolProperty(
         name="Include bones with undefined IDs",
         description="Export all bones.\nVertex weights and skeletal animation are also covered.",
         default=False,
-        )
+        ) # type: ignore
     is_visual_keying: BoolProperty(
         name='Visual Keying',
         description='''Set keyframes based on visuals.
 More frames will slow down the export,
 so it's a good idea to pre-bake the animation and uncheck this option''',
         default=False,
-        )
+        ) # type: ignore
     use_scale_keyframe: BoolProperty(
         name='Apply scale',
         description='Set scale keyframes in the animation',
         default=False,
-        )
+        ) # type: ignore
     filter_glob: StringProperty(
         default='*.skeleton;*.SKELETON',
         options={'HIDDEN'},
-        )
+        ) # type: ignore
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -382,11 +385,11 @@ class KENSHI_OT_ImportPhysXObject(Operator, ImportHelper):
         description='If characters are not displayed correctly, try changing the character code',
         items=code_page_list(),
         default='utf-8',
-        )
+        ) # type: ignore
     filter_glob: StringProperty(
         default='*.xml;*.XML',
         options={'HIDDEN'},
-        )
+        ) # type: ignore
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -423,20 +426,21 @@ class KENSHI_OT_ExportPhysXObject(Operator, ExportHelper):
                ('CHILDREN', 'Selected Children', 'Export selected objects and all their child objects'),
                ],
         default='CHILDREN',
-        )
+        ) # type: ignore
     transform: EnumProperty(
         name='Transform',
         description='Root transformation',
         items=[('SCENE', 'Scene', 'Export objects relative to scene origin'),
-               ('PARENT', 'Parent', 'Export objects relative to common parent'),
+               ('PARENT', 'Common Parent', 'Export objects relative to common parent'),
                ('ACTIVE', 'Active', 'Export objects relative to the active object'),
+               ('OWN_PARENT', 'Parent', 'Export objects relative to parent'),
                ],
         default='PARENT',
-        )
+        ) # type: ignore
     filter_glob: StringProperty(
         default='*.xml;*.XML',
         options={'HIDDEN'},
-        )
+        ) # type: ignore
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -459,6 +463,24 @@ class KENSHI_OT_ExportPhysXObject(Operator, ExportHelper):
         row = layout.row()
         row.template_icon_view(context.scene, "physx_logo")
         layout.label(text='PhysX Technology provided under license from NVIDIA Corporation. © 2002-2011 NVIDIA Corporation. All rights reserved.')
+
+
+class KENSHI_IO_Preferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
+
+    num_fake_pose: IntProperty(
+        name='contain fake shape keys',
+        description='exporting mesh contains fake_pose1, fake_pose2, ...',
+        min=0,
+        max=5,
+        default=0,
+    ) # type: ignore
+
+    def draw(self, context):
+        layout = self.layout
+        sp = layout.split(factor=0.3)
+        col = sp.column()
+        col.prop(self, 'num_fake_pose')
 
 
 def menu_func_import(self, context):
@@ -496,7 +518,8 @@ classes = (KENSHI_OT_ImportOgreObject,
            KENSHI_OT_ImportOgreSkeletonObject,
            KENSHI_OT_ExportOgreSkeletonObject,
            KENSHI_OT_ImportPhysXObject,
-           KENSHI_OT_ExportPhysXObject)
+           KENSHI_OT_ExportPhysXObject,
+           KENSHI_IO_Preferences)
 
 preview_collections = {}
 

@@ -4,7 +4,7 @@ import sys
 import xml.etree.ElementTree as ET
 import re
 import traceback
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import bpy
 from mathutils import Matrix
@@ -23,7 +23,7 @@ def isfloat(s: str):
         return True
 
 
-def xOpenFile(filename: str, encoding: str = 'utf-8'):
+def open_file(filename: str, encoding: str = 'utf-8'):
     with open(filename, encoding=encoding, errors='replace') as f:
         xml_text = f.read()
     content = r'&(?!amp;)'
@@ -52,7 +52,7 @@ def cooked_data_deserialize(
     return verts, faces
 
 
-def poseToMatrix(xml_actor: ET.Element, node_name: str):
+def pose_to_matrix(xml_actor: ET.Element, node_name: str):
     xml_pose = xml_actor.find(node_name)
 
     text_value = '' if xml_pose is None else xml_pose.text
@@ -83,8 +83,26 @@ def poseToMatrix(xml_actor: ET.Element, node_name: str):
     return mat
 
 
+def create_empty_object(
+        name: str,
+        pose_mat: Matrix):
+    scene = bpy.context.scene
+    layer = bpy.context.scene
+
+    ob = bpy.data.objects.new(name, None)
+    scene.objects.link(ob)
+
+    ob.matrix_world = pose_mat
+    ob.empty_draw_type = 'ARROWS'
+
+    layer.update()
+
+    return ob
+
+
 def create_mesh(
         name: str,
+        parent_object: bpy.types.Object,
         pose_mat: Matrix,
         verts: List[Tuple],
         faces: List[Tuple] = [],
@@ -104,9 +122,12 @@ def create_mesh(
     mesh_data.update(calc_edges=True)
     mesh_data.use_auto_smooth = True
 
+    if parent_object is not None:
+        ob.parent = parent_object
+
     prev_active = layer.objects.active
     layer.objects.active = ob
-    ob.matrix_world = pose_mat
+    ob.matrix_local = pose_mat
 
     bpy.ops.rigidbody.object_add()
     ob.rigid_body.collision_shape = collision_shape
@@ -116,15 +137,29 @@ def create_mesh(
     return ob
 
 
-def createBoxCollision(xml_actor: ET.Element, xml_physics: ET.Element):
+def create_box_shape(
+        xml_actor: ET.Element,
+        xml_physics: ET.Element,
+        parent_objects: Dict[Matrix, bpy.types.Object]
+        ):
     print('Import NxBoxShapeDesc')
 
     xml_NxBoxShapeDesc = xml_actor.find('NxBoxShapeDesc')
     if xml_NxBoxShapeDesc is None:
         return
 
-    global_mat = poseToMatrix(xml_actor, 'globalPose')
-    local_mat = poseToMatrix(xml_NxBoxShapeDesc, 'NxShapeDesc/localPose')
+    actor_name = xml_actor.get('name')
+
+    global_mat = pose_to_matrix(xml_actor, 'globalPose')
+    local_mat = pose_to_matrix(xml_NxBoxShapeDesc, 'NxShapeDesc/localPose')
+
+    parent_mat = global_mat.freeze()
+    parent_object = parent_objects.get(parent_mat)
+
+    if not global_mat == Matrix() and parent_object is None:
+        parent_object = create_empty_object('{}_root_{}'.format(actor_name, len(parent_objects)),
+                                            parent_mat)
+        parent_objects[parent_mat] = parent_object
 
     xml_dimensions = xml_NxBoxShapeDesc.get('dimensions')
     dimensions = []
@@ -158,23 +193,36 @@ def createBoxCollision(xml_actor: ET.Element, xml_physics: ET.Element):
         (3, 7, 4, 0)
         ]
 
-    actor_name = xml_actor.get('name')
-    create_mesh(name=actor_name,
-                verts=verts,
-                faces=faces,
-                pose_mat=global_mat * local_mat,
-                collision_shape='BOX')
+    shape = create_mesh(name=actor_name,
+                        parent_object=parent_object,
+                        verts=verts,
+                        faces=faces,
+                        pose_mat=local_mat,
+                        collision_shape='BOX')
 
 
-def createSphereCollision(xml_actor: ET.Element, xml_physics: ET.Element):
+def create_sphere_shape(
+        xml_actor: ET.Element,
+        xml_physics: ET.Element,
+        parent_objects: Dict[Matrix, bpy.types.Object]):
     print('Import NxSphereShapeDesc')
 
     xml_NxSphereShapeDesc = xml_actor.find('NxSphereShapeDesc')
     if xml_NxSphereShapeDesc is None:
         return
 
-    global_mat = poseToMatrix(xml_actor, 'globalPose')
-    local_mat = poseToMatrix(xml_NxSphereShapeDesc, 'NxShapeDesc/localPose')
+    actor_name = xml_actor.get('name')
+
+    global_mat = pose_to_matrix(xml_actor, 'globalPose')
+    local_mat = pose_to_matrix(xml_NxSphereShapeDesc, 'NxShapeDesc/localPose')
+
+    parent_mat = global_mat.freeze()
+    parent_object = parent_objects.get(parent_mat)
+
+    if not global_mat == Matrix() and parent_object is None:
+        parent_object = create_empty_object('{}_root_{}'.format(actor_name, len(parent_objects)),
+                                            parent_mat)
+        parent_objects[parent_mat] = parent_object
 
     radius = xml_NxSphereShapeDesc.get('radius')
     half_radius = float(radius) * 0.5
@@ -190,21 +238,29 @@ def createSphereCollision(xml_actor: ET.Element, xml_physics: ET.Element):
         (-half_radius, half_radius, half_radius)
     ]
 
-    edges = [
-        (0, 1), (1, 2), (2, 3), (3, 0),
-        (4, 5), (5, 6), (6, 7), (7, 4),
-        (0, 4), (1, 5), (2, 6), (3, 7)
-    ]
+    faces = [
+        (0, 1, 2, 3),
+        (4, 5, 6, 7),
+        (0, 4, 5, 1),
+        (1, 5, 6, 2),
+        (2, 6, 7, 3),
+        (3, 7, 4, 0)
+        ]
 
-    actor_name = xml_actor.get('name')
-    create_mesh(name=actor_name,
-                verts=verts,
-                edges=edges,
-                pose_mat=global_mat * local_mat,
-                collision_shape='SPHERE')
+    shape = create_mesh(name=actor_name,
+                        parent_object=parent_object,
+                        verts=verts,
+                        faces=faces,
+                        pose_mat=local_mat,
+                        collision_shape='SPHERE')
+
+    shape.draw_type = 'BOUNDS'
 
 
-def createCapsuleCollision(xml_actor: ET.Element, xml_physics: ET.Element):
+def create_capsule_shape(
+        xml_actor: ET.Element,
+        xml_physics: ET.Element,
+        parent_objects: Dict[Matrix, bpy.types.Object]):
     print('Import NxCapsuleShapeDesc')
 
     xml_NxCapsuleShapeDesc = xml_actor.find('NxCapsuleShapeDesc')
@@ -218,8 +274,18 @@ def createCapsuleCollision(xml_actor: ET.Element, xml_physics: ET.Element):
         (0, 0, 0, 1)
         ])
 
-    global_mat = poseToMatrix(xml_actor, 'globalPose')
-    local_mat = poseToMatrix(xml_NxCapsuleShapeDesc, 'NxShapeDesc/localPose')
+    actor_name = xml_actor.get('name')
+
+    global_mat = pose_to_matrix(xml_actor, 'globalPose')
+    local_mat = pose_to_matrix(xml_NxCapsuleShapeDesc, 'NxShapeDesc/localPose')
+
+    parent_mat = global_mat.freeze()
+    parent_object = parent_objects.get(parent_mat)
+
+    if not global_mat == Matrix() and parent_object is None:
+        parent_object = create_empty_object('{}_root_{}'.format(actor_name, len(parent_objects)),
+                                            parent_mat)
+        parent_objects[parent_mat] = parent_object
 
     radius = xml_NxCapsuleShapeDesc.get('radius')
     height = xml_NxCapsuleShapeDesc.get('height')
@@ -237,23 +303,29 @@ def createCapsuleCollision(xml_actor: ET.Element, xml_physics: ET.Element):
         (-half_radius, half_radius, half_height)
     ]
 
-    edges = [
-        (0, 1), (1, 2), (2, 3), (3, 0),
-        (4, 5), (5, 6), (6, 7), (7, 4),
-        (0, 4), (1, 5), (2, 6), (3, 7)
-    ]
+    faces = [
+        (0, 1, 2, 3),
+        (4, 5, 6, 7),
+        (0, 4, 5, 1),
+        (1, 5, 6, 2),
+        (2, 6, 7, 3),
+        (3, 7, 4, 0)
+        ]
 
-    actor_name = xml_actor.get('name')
-    create_mesh(name=actor_name,
-                verts=verts,
-                edges=edges,
-                pose_mat=global_mat * local_mat * fix,
-                collision_shape='CAPSULE')
+    shape = create_mesh(name=actor_name,
+                        parent_object=parent_object,
+                        verts=verts,
+                        faces=faces,
+                        pose_mat=local_mat * fix,
+                        collision_shape='CAPSULE')
+
+    shape.draw_type = 'BOUNDS'
 
 
-def createConvexCollision(
+def create_convex_shape(
         xml_actor: ET.Element,
         xml_physics: ET.Element,
+        parent_objects: Dict[Matrix, bpy.types.Object],
         physx: KenshiPhysXSerializer):
     print('Import NxConvexShapeDesc')
 
@@ -261,8 +333,18 @@ def createConvexCollision(
     if xml_NxConvexShapeDesc is None:
         return
 
-    global_mat = poseToMatrix(xml_actor, 'globalPose')
-    local_mat = poseToMatrix(xml_NxConvexShapeDesc, 'NxShapeDesc/localPose')
+    actor_name = xml_actor.get('name')
+
+    global_mat = pose_to_matrix(xml_actor, 'globalPose')
+    local_mat = pose_to_matrix(xml_NxConvexShapeDesc, 'NxShapeDesc/localPose')
+
+    parent_mat = global_mat.freeze()
+    parent_object = parent_objects.get(parent_mat)
+
+    if not global_mat == Matrix() and parent_object is None:
+        parent_object = create_empty_object('{}_root_{}'.format(actor_name, len(parent_objects)),
+                                            parent_mat)
+        parent_objects[parent_mat] = parent_object
 
     verts = []
     faces = []
@@ -300,17 +382,18 @@ def createConvexCollision(
         if len(verts) == 0 or len(faces) == 0:
             return
 
-        actor_name = xml_actor.get('name')
-        create_mesh(name=actor_name,
-                    verts=verts,
-                    faces=faces,
-                    pose_mat=global_mat * local_mat,
-                    collision_shape='CONVEX_HULL')
+        shape = create_mesh(name=actor_name,
+                            parent_object=parent_object,
+                            verts=verts,
+                            faces=faces,
+                            pose_mat=local_mat,
+                            collision_shape='CONVEX_HULL')
 
 
-def createMeshCollision(
+def create_triangle_mesh_shape(
         xml_actor: ET.Element,
         xml_physics: ET.Element,
+        parent_objects: Dict[Matrix, bpy.types.Object],
         physx: KenshiPhysXSerializer):
     print('Import NxTriangleMeshShapeDesc')
 
@@ -318,8 +401,18 @@ def createMeshCollision(
     if xml_NxTriangleMeshShapeDesc is None:
         return
 
-    global_mat = poseToMatrix(xml_actor, 'globalPose')
-    local_mat = poseToMatrix(xml_NxTriangleMeshShapeDesc, 'NxShapeDesc/localPose')
+    actor_name = xml_actor.get('name')
+
+    global_mat = pose_to_matrix(xml_actor, 'globalPose')
+    local_mat = pose_to_matrix(xml_NxTriangleMeshShapeDesc, 'NxShapeDesc/localPose')
+
+    parent_mat = global_mat.freeze()
+    parent_object = parent_objects.get(parent_mat)
+
+    if not global_mat == Matrix() and parent_object is None:
+        parent_object = create_empty_object('{}_root_{}'.format(actor_name, len(parent_objects)),
+                                            parent_mat)
+        parent_objects[parent_mat] = parent_object
 
     verts = []
     faces = []
@@ -357,12 +450,12 @@ def createMeshCollision(
         if len(verts) == 0 or len(faces) == 0:
             return
 
-        actor_name = xml_actor.get('name')
-        create_mesh(name=actor_name,
-                    verts=verts,
-                    faces=faces,
-                    pose_mat=global_mat * local_mat,
-                    collision_shape='MESH')
+        shape = create_mesh(name=actor_name,
+                            parent_object=parent_object,
+                            verts=verts,
+                            faces=faces,
+                            pose_mat=local_mat,
+                            collision_shape='MESH')
 
 
 @func_timer
@@ -382,12 +475,14 @@ def load(
 
         physx = KenshiPhysXSerializer()
 
-        nxustream2 = xOpenFile(filepath, encoding=select_encoding)
+        nxustream2 = open_file(filepath, encoding=select_encoding)
 
         if nxustream2 is None:
             return {'CANCELLED'}
 
         bpy.ops.object.select_all(action='DESELECT')
+
+        parent_objects = {} # type: Dict[Matrix, bpy.types.Object]
 
         physics_collection = nxustream2.find('NxuPhysicsCollection')
         sence_desc = nxustream2.find('NxuPhysicsCollection/NxSceneDesc')
@@ -395,19 +490,19 @@ def load(
         if physics_collection is not None and sence_desc is not None:
             for actor_desc in sence_desc.findall('NxActorDesc'):
                 if actor_desc.find('NxBoxShapeDesc') is not None:
-                    createBoxCollision(actor_desc, physics_collection)
+                    create_box_shape(actor_desc, physics_collection, parent_objects)
 
                 if actor_desc.find('NxSphereShapeDesc') is not None:
-                    createSphereCollision(actor_desc, physics_collection)
+                    create_sphere_shape(actor_desc, physics_collection, parent_objects)
 
                 if actor_desc.find('NxCapsuleShapeDesc') is not None:
-                    createCapsuleCollision(actor_desc, physics_collection)
+                    create_capsule_shape(actor_desc, physics_collection, parent_objects)
 
                 if actor_desc.find('NxConvexShapeDesc') is not None:
-                    createConvexCollision(actor_desc, physics_collection, physx)
+                    create_convex_shape(actor_desc, physics_collection, parent_objects, physx)
 
                 if actor_desc.find('NxTriangleMeshShapeDesc') is not None:
-                    createMeshCollision(actor_desc, physics_collection, physx)
+                    create_triangle_mesh_shape(actor_desc, physics_collection, parent_objects, physx)
         operator.report({'INFO'}, 'Import successful')
 
     except:

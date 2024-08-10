@@ -309,7 +309,8 @@ def collect_mesh(
         export_color: bool = False,
         tangent_format: str = 'TANGENT_4',
         export_poses: bool = False,
-        optimize: bool = True):
+        optimize: bool = True,
+        num_fake_pose: int = 0):
 
     submesh_array: List[SubMeshData] = []
     for submesh_index, ob in enumerate(selected_objects):
@@ -385,6 +386,10 @@ def collect_mesh(
             elif tangent_format == 'FLIPPED':
                 nd_bitangents = -nd_bitangents * nd_bitangent_signs.reshape(-1, 1)
                 nd_bitangent_signs = -nd_bitangent_signs
+            elif tangent_format == 'ZERO':
+                nd_tangents = np.zeros((loop_count, 3), dtype=np.float32)
+                nd_bitangents = np.zeros((loop_count, 3), dtype=np.float32)
+                nd_bitangent_signs = np.zeros(loop_count, dtype=np.float32)
         else:
             nd_tangents = np.empty(3, dtype=np.float32)
             nd_bitangent_signs = np.empty(1, dtype=np.float32)
@@ -436,6 +441,11 @@ def collect_mesh(
                 nd_shape_keys = nd_shape_keys.reshape(vertex_count, 3)
 
                 submesh.append_shapekey(shape_key.name, nd_shape_keys, out_nd_indices)
+
+            if num_fake_pose > 0:
+                nd_shape_keys = np.zeros((vertex_count, 3), dtype=np.float32)
+                for i in range(1, num_fake_pose + 1):
+                    submesh.append_shapekey('fake_pose{}'.format(i), nd_shape_keys, out_nd_indices)
 
         bone_assignments = [BoneAssignmentData(vert.index,
                                                mesh_data.get_bone_id(ob.vertex_groups[group.group].name),
@@ -528,7 +538,8 @@ def save(
         mesh_optimize: bool = True,
         export_version: str = 'V_1_10',
         is_visual_keying: bool = False,
-        use_scale_keyframe: bool = False):
+        use_scale_keyframe: bool = False,
+        num_fake_pose: int = 0):
     if export_version == 'V_1_8':
         mesh_version = MeshVersion.V_1_8
         skeleton_version = SkeletonVersion.V_Latest
@@ -597,7 +608,8 @@ def save(
                      export_color=export_colour,
                      tangent_format=tangent_format,
                      export_poses=export_poses,
-                     optimize=mesh_optimize)
+                     optimize=mesh_optimize,
+                     num_fake_pose=num_fake_pose)
 
         if skeleton_data:
             if export_animation:
