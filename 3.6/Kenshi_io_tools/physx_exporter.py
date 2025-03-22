@@ -1,8 +1,6 @@
 
 import os
-import sys
 import xml.etree.ElementTree as ET
-from xml.dom import minidom
 import traceback
 from typing import Set
 
@@ -11,8 +9,7 @@ import bmesh
 from mathutils import Matrix
 
 from .util import func_timer
-sys.path.append(os.path.dirname(__file__))
-from Kenshi_blender_tool import KenshiPhysXSerializer
+from .kenshi_blender_tool import KenshiPhysXSerializer
 
 
 def shape_bounds(obj: bpy.types.Object):
@@ -305,9 +302,6 @@ def save(
         objects: str = 'ALL',
         transform: str = 'SCENE'):
     try:
-        script_dir = os.path.dirname(os.path.realpath( __file__ ))
-        os.environ['PATH'] = '{};{}'.format(script_dir, os.environ['PATH'])
-
         if not filepath.lower().endswith('.xml'):
             filepath = '{}.xml'.format(filepath)
         print('Saving', filepath)
@@ -395,17 +389,9 @@ def save(
                 parent_matrix = body.parent.matrix_world
             saveShape(physics_collection, actor_desc, body, parent_matrix, physx)
 
-        blender_version = bpy.app.version[0] * 100 + bpy.app.version[1]
-        if blender_version >= 290:
-            tree = ET.ElementTree(xRoot)
-            ET.indent(tree, space='    ')
-            tree.write(filepath, encoding='UTF-8', xml_declaration=True)
-        else:
-            document = minidom.parseString(ET.tostring(xRoot, 'utf-8'))
-            data = document.toprettyxml(indent='    ')
-            with open(filepath, 'wb') as f:
-                f.write(bytes(data,'utf-8'))
-                f.close()
+        tree = ET.ElementTree(xRoot)
+        ET.indent(tree, space='    ')
+        tree.write(filepath, encoding='UTF-8', xml_declaration=True)
         operator.report({'INFO'}, 'Export successful')
 
     except:

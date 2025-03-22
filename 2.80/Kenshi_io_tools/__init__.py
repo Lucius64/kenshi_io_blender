@@ -3,7 +3,7 @@ bl_info = {
     "name": "Kenshi IO Tools (mesh, skeleton, collision)",
     "author": "Lucius",
     "blender": (2, 80, 0),
-    "version": (1, 2, 0),
+    "version": (1, 3, 0),
     "location": "File > Import-Export",
     "description": ("Import-Export Kenshi Model and collision files."),
     "warning": "",
@@ -16,13 +16,13 @@ bl_info = {
 if "bpy" in locals():
     import importlib
     if "ogre_importer" in locals():
-        importlib.reload(ogre_importer)
+        importlib.reload(ogre_importer) # type: ignore
     if "ogre_exporter" in locals():
-        importlib.reload(ogre_exporter)
+        importlib.reload(ogre_exporter) # type: ignore
     if "physx_exporter" in locals():
-        importlib.reload(physx_exporter)
+        importlib.reload(physx_exporter) # type: ignore
     if "physx_importer" in locals():
-        importlib.reload(physx_importer)
+        importlib.reload(physx_importer) # type: ignore
     if "util" in locals():
         importlib.reload(util)
 
@@ -34,10 +34,6 @@ from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bpy.utils import register_class, unregister_class, previews
 
-from . import ogre_importer
-from . import ogre_exporter
-from . import physx_importer
-from . import physx_exporter
 from .util import load_translate, code_page_list
 
 
@@ -97,9 +93,21 @@ Weightmaps can get mixed up if not selected''',
         default='*.mesh;*.MESH',
         options={'HIDDEN'},
         ) # type: ignore
+    cleanup_vertices: EnumProperty(
+        name='Merge vertices',
+        description='',
+        items=[('KEEP_FACE', 'keep face', 'Keep the face as much as possible'),
+               ('DEFAULT', 'default', 'Merges vertices as much as possible, but double-sided polygons become single-sided'),
+               ('NONE', 'not merge', 'Keeps all vertices but separates faces'),
+               ],
+        default='DEFAULT',
+        ) # type: ignore
 
     def execute(self, context):
+        from . import ogre_importer
         keywords = self.as_keywords(ignore=('filter_glob',))
+        prefs = context.preferences.addons[__name__].preferences
+        keywords['submesh_name_delimiter'] = prefs.submesh_name_delimiter
         bpy.context.window.cursor_set('WAIT')
         result = ogre_importer.load(self, context, **keywords)
         bpy.context.window.cursor_set('DEFAULT')
@@ -117,6 +125,8 @@ Weightmaps can get mixed up if not selected''',
         mesh.prop(self, 'import_shapekeys')
         mesh.prop(self, 'create_materials')
         mesh.prop(self, 'use_filename')
+        mesh.label(text='Merge vertices')
+        mesh.prop(self, 'cleanup_vertices', text='')
 
         sleketon = layout.box()
         link = sleketon.column()
@@ -218,6 +228,7 @@ so it's a good idea to pre-bake the animation and uncheck this option''',
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        from . import ogre_exporter
         keywords = self.as_keywords(ignore=('check_existing', 'filter_glob'))
         prefs = context.preferences.addons[__name__].preferences
         keywords['num_fake_pose'] = prefs.num_fake_pose
@@ -280,6 +291,7 @@ class KENSHI_OT_ImportOgreSkeletonObject(Operator, ImportHelper):
         ) # type: ignore
 
     def execute(self, context):
+        from . import ogre_importer
         keywords = self.as_keywords(ignore=('filter_glob',))
         bpy.context.window.cursor_set('WAIT')
         result = ogre_importer.load_skeleton(self, context, **keywords)
@@ -351,6 +363,7 @@ so it's a good idea to pre-bake the animation and uncheck this option''',
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        from . import ogre_exporter
         keywords = self.as_keywords(ignore=('check_existing', 'filter_glob'))
         bpy.context.window.cursor_set('WAIT')
         result = ogre_exporter.save_skeleton(self, context, **keywords)
@@ -396,6 +409,7 @@ class KENSHI_OT_ImportPhysXObject(Operator, ImportHelper):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        from . import physx_importer
         keywords = self.as_keywords(ignore=('check_existing', 'filter_glob'))
         bpy.context.window.cursor_set('WAIT')
         result = physx_importer.load(self, context, **keywords)
@@ -447,6 +461,7 @@ class KENSHI_OT_ExportPhysXObject(Operator, ExportHelper):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        from . import physx_exporter
         keywords = self.as_keywords(ignore=('check_existing', 'filter_glob'))
         bpy.context.window.cursor_set('WAIT')
         result = physx_exporter.save(self, context, **keywords)
@@ -475,12 +490,26 @@ class KENSHI_IO_Preferences(bpy.types.AddonPreferences):
         max=5,
         default=0,
     ) # type: ignore
+    submesh_name_delimiter: EnumProperty(
+        name='submesh name delimiter',
+        description='',
+        items=[('_', 'underscore', ''),
+               ('.', 'dot', ''),
+               (' ', 'space', ''),
+               ('-', 'hyphen', ''),
+               (':', 'colon', ''),
+               ('NUL', 'null', ''),
+               ],
+        default='-',
+    ) # type: ignore
 
     def draw(self, context):
         layout = self.layout
         sp = layout.split(factor=0.3)
         col = sp.column()
         col.prop(self, 'num_fake_pose')
+        col.label(text='submesh name delimiter')
+        col.prop(self, 'submesh_name_delimiter', text='')
 
 
 def menu_func_import(self, context):

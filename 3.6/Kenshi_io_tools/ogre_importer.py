@@ -1,11 +1,11 @@
 
 import os
 from statistics import mean
-import sys
 import traceback
 from typing import List, Dict, Set
 
 import bpy
+import bmesh
 from bpy.types import (
     Context,
     Mesh,
@@ -16,8 +16,7 @@ from mathutils import Matrix, Vector
 import numpy as np
 
 from .util import func_timer
-sys.path.append(os.path.dirname(__file__))
-from Kenshi_blender_tool import *
+from .kenshi_blender_tool import *
 
 
 def set_bone_head_position(bones: List[BoneData]):
@@ -158,7 +157,7 @@ def create_skeleton(
     for bone in armature.edit_bones:
             if 'OGREID' in bone:
                 bone_map[int(bone['OGREID'])] = bone.name
-                import_info_log.append('Created bone {} {}'.format(bone['OGREID'], bone.name))
+                import_info_log.append(f"Created bone {bone['OGREID']} {bone.name}")
 
     bpy.ops.object.mode_set(mode='OBJECT')
     return rig, bone_map
@@ -175,7 +174,10 @@ def create_mesh(
         import_shapekeys: bool = True,
         create_materials: bool = True,
         use_filename: bool = False,
-        select_encoding='utf-8'):
+        select_encoding='utf-8',
+        cleanup_vertices: str = 'DEFAULT',
+        submesh_name_delimiter: str = '',
+        ):
     mesh_objects: List[Object] = []
     scene_collection = context.scene.collection
     scene_layer = context.view_layer
@@ -185,7 +187,7 @@ def create_mesh(
 
     for submesh in submeshes:
         submesh_index = submesh.index
-        submesh_name = ('{}{:0={}}'.format(mesh_name, submesh_index, submesh_count)
+        submesh_name = (f'{mesh_name}{submesh_name_delimiter}{submesh_index:0{submesh_count}}'
                         if use_filename
                         else submesh.encorded_name.decode(select_encoding,
                                                           errors='replace'))
@@ -222,7 +224,7 @@ def create_mesh(
         if submesh.geometry.has_texture_coord:
             nd_texcoords = submesh.get_texcoords()
             for texcorrd_index in range(nd_texcoords.shape[0]):
-                uv_layer = me.attributes.new(name='UVLayer{}'.format(texcorrd_index),
+                uv_layer = me.attributes.new(name=f'UVLayer{texcorrd_index}',
                                              type='FLOAT2',
                                              domain='CORNER'
                                              )
@@ -230,12 +232,12 @@ def create_mesh(
 
         if submesh.geometry.has_colors:
             nd_colors, nd_alphas = submesh.get_colors()
-            color_data = me.attributes.new(name='Colour{}'.format(submesh_index),
+            color_data = me.attributes.new(name=f'Colour{submesh_index}',
                                            type='BYTE_COLOR',
                                            domain='CORNER'
                                            )
             color_data.data.foreach_set('color_srgb', nd_colors)
-            alpha_data = me.attributes.new(name='Alpha{}'.format(submesh_index),
+            alpha_data = me.attributes.new(name=f'Alpha{submesh_index}',
                                            type='BYTE_COLOR',
                                            domain='CORNER'
                                            )
@@ -262,7 +264,7 @@ def create_mesh(
                 for name, pose in shape_keys:
                     if name.startswith('fake_pose'):
                         continue
-                    import_info_log.append('Created pose {}'.format(name))
+                    import_info_log.append(f'Created pose {name}')
                     shape_key_add(name=name)
                     me.shape_keys.key_blocks[name].data.foreach_set('co', pose.ravel())
 
@@ -270,9 +272,45 @@ def create_mesh(
         if hasattr(me, 'use_auto_smooth'):
             me.use_auto_smooth = True
 
-        bpy.ops.object.editmode_toggle()
-        bpy.ops.mesh.remove_doubles(threshold=0.001)
-        bpy.ops.object.editmode_toggle()
+        if cleanup_vertices == 'KEEP_FACE':
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='EDIT')
+            bm = bmesh.from_edit_mesh(me)
+            face_dict: Dict[Vector, int] = {}
+            dupulicate_faces: List[int] = []
+
+            bm.faces.ensure_lookup_table()
+            for face in me.polygons:
+                v = Vector(
+                    (
+                        round(face.center.x, 2),
+                        round(face.center.y, 2),
+                        round(face.center.z, 2)
+                    )
+                ).freeze()
+
+                i = face_dict.get(v, -1)
+                if i < 0:
+                    face_dict[v] = face.index
+                    bm.faces[face.index].select = True
+                else:
+                    dupulicate_faces.append(face.index)
+                    bm.faces[face.index].select = False
+
+            bmesh.update_edit_mesh(me)
+            bpy.ops.mesh.remove_doubles(threshold=0.0001)
+            if len(dupulicate_faces) > 0:
+                bpy.ops.mesh.select_all(action = 'INVERT')
+                bpy.ops.mesh.remove_doubles(threshold=0.0001)
+            bm.free()
+            bpy.ops.mesh.select_all(action = 'SELECT')
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        elif cleanup_vertices == 'DEFAULT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.remove_doubles(threshold=0.0001)
+            bpy.ops.object.mode_set(mode='OBJECT')
 
         if import_normals and submesh.geometry.has_normals:
             normals = submesh.get_normals()
@@ -302,7 +340,8 @@ def create_mesh(
                           polyIndex,
                           '/',
                           len(me.polygons))
-        import_info_log.append('Created mesh {}'.format(submesh_name))
+        import_info_log.append(f'Created mesh {submesh_name}')
+        ob.select_set(False)
         mesh_objects.append(ob)
 
     if armature:
@@ -359,7 +398,9 @@ def create_animation(
         tracks_new = armature.animation_data.nla_tracks.new
         for animation in animations:
             action = actions_new(animation.name)
-            import_info_log.append('Created action {}'.format(animation.name))
+            import_info_log.append(f'Created action {action.name}')
+
+            frame_end = int(animation.length * fps + 0.5)
 
             fcurves_new = action.fcurves.new
             for track_data in animation.get_animations(bone_matrix_map=mat, fps=fps, round_frame=round_frames):
@@ -378,6 +419,8 @@ def create_animation(
                     curve.keyframe_points.add(length)
                     curve.keyframe_points.foreach_set("co", nd_locations[i])
                     curve.update()
+                    if not round_frames:
+                        curve.bake(0, frame_end, remove='ALL')
 
                 nd_rotations = track_data.nd_rotations
                 # length = nd_rotations.shape[1] / 2
@@ -388,6 +431,8 @@ def create_animation(
                     curve.keyframe_points.add(length)
                     curve.keyframe_points.foreach_set("co", nd_rotations[i])
                     curve.update()
+                    if not round_frames:
+                        curve.bake(0, frame_end, remove='ALL')
 
                 if track_data.has_scale:
                     nd_scales = track_data.nd_scales
@@ -399,6 +444,8 @@ def create_animation(
                         curve.keyframe_points.add(length)
                         curve.keyframe_points.foreach_set("co", nd_scales[i])
                         curve.update()
+                    if not round_frames:
+                        curve.bake(0, frame_end, remove='ALL')
 
             track = tracks_new()
             track.name = animation.name
@@ -417,7 +464,10 @@ def load(operator: Operator,
          use_selected_skeleton: bool = False,
          create_materials: bool = True,
          use_filename: bool = False,
-         select_encoding: str = 'utf-8') -> Set[str]:
+         select_encoding: str = 'utf-8',
+         cleanup_vertices: str = 'DEFAULT',
+         submesh_name_delimiter: str = '',
+         ) -> Set[str]:
     if not os.path.isfile(filepath):
         operator.report({'WARNING'}, 'Selected file is not exist')
         return {'CANCELLED'}
@@ -439,6 +489,10 @@ def load(operator: Operator,
         mesh_data = serializer.load_mesh(mesh_file)
 
         selected_skeleton = context.active_object if use_selected_skeleton and context.active_object and context.active_object.type == 'ARMATURE' else None
+        objs = context.selected_objects
+        for obj in objs:
+            if obj.type == 'MESH':
+                obj.select_set(False)
 
         skeleton_data = None
         bone_map: Dict[int, str] = {}
@@ -473,7 +527,10 @@ def load(operator: Operator,
                     import_shapekeys=import_shapekeys,
                     select_encoding=select_encoding,
                     create_materials=create_materials,
-                    use_filename=use_filename)
+                    use_filename=use_filename,
+                    cleanup_vertices=cleanup_vertices,
+                    submesh_name_delimiter=submesh_name_delimiter,
+                    )
 
         if import_animations and skeleton_data:
             render = context.scene.render
@@ -487,6 +544,10 @@ def load(operator: Operator,
                              fps=render.fps,
                              round_frames=round_frames)
 
+        for obj in objs:
+            if obj.type == 'MESH':
+                obj.select_set(True)
+
         print('\n'.join(import_info_log))
         print('done.')
         operator.report({'INFO'}, 'Import successful')
@@ -494,7 +555,7 @@ def load(operator: Operator,
     except:
         err_mes = traceback.format_exc()
         print(err_mes)
-        operator.report({'ERROR'}, 'Import error!\n{}'.format(err_mes))
+        operator.report({'ERROR'}, f'Import error!\n{err_mes}')
 
     return {'FINISHED'}
 
@@ -559,6 +620,6 @@ def load_skeleton(operator: Operator,
     except:
         err_mes = traceback.format_exc()
         print(err_mes)
-        operator.report({'ERROR'}, 'Import error!\n{}'.format(err_mes))
+        operator.report({'ERROR'}, f'Import error!\n{err_mes}')
 
     return {'FINISHED'}

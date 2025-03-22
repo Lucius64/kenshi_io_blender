@@ -137,6 +137,12 @@ so it's a good idea to pre-bake the animation and uncheck this option''')
 More frames will slow down the export,
 so it's a good idea to pre-bake the animation and uncheck this option''',
             ('*', "Canceled because 'use selected armature' A is enabled and 'Import animation' is disabled") : "Canceled because 'use selected armature' A is enabled and 'Import animation' is disabled",
+            ('*', 'Merge vertices') : 'Merge vertices',
+            ('*', 'keep face') : 'keep face',
+            ('*', 'not merge') : 'not merge',
+            ('*', 'Keep the face as much as possible') : 'Keep the face as much as possible',
+            ('*', 'Merges vertices as much as possible, but double-sided polygons become single-sided') : 'Merges vertices as much as possible, but double-sided polygons become single-sided',
+            ('*', 'Keeps all vertices but separates faces') : 'Keeps all vertices but separates faces',
         },
         'ja_JP' : {
             ('*', 'Import Normals') : '法線をインポート',
@@ -237,6 +243,12 @@ so it's a good idea to pre-bake the animation and uncheck this option''')
 フレーム数が増えるとエクスポートが遅くなるので、
 事前にアニメーションをベイクしてこのオプションをオフにすることをお勧めします''',
             ('*', "Canceled because 'use selected armature' A is enabled and 'Import animation' is disabled") : "「選択したアーマチュアを使用」が有効で「アニメーションをインポート」が無効になっているため、キャンセルされました",
+            ('*', 'Merge vertices') : '頂点を結合',
+            ('*', 'keep face') : '面を保持',
+            ('*', 'not merge') : '結合なし',
+            ('*', 'Keep the face as much as possible') : '面をできる限り保持します',
+            ('*', 'Merges vertices as much as possible, but double-sided polygons become single-sided') : '頂点をできる限り結合しますが、両面ポリゴンが片面になります',
+            ('*', 'Keeps all vertices but separates faces') : '頂点を全て保持しますが、面が分離します',
         }
     }
 

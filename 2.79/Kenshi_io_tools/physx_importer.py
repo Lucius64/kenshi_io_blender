@@ -1,6 +1,4 @@
 
-import os
-import sys
 import xml.etree.ElementTree as ET
 import re
 import traceback
@@ -10,8 +8,7 @@ import bpy
 from mathutils import Matrix
 
 from .util import func_timer
-sys.path.append(os.path.dirname(__file__))
-from Kenshi_blender_tool import KenshiPhysXSerializer, CollisionMesh
+from .kenshi_blender_tool import KenshiPhysXSerializer, CollisionMesh
 
 
 def isfloat(s: str):
@@ -466,8 +463,6 @@ def load(
         select_encoding='utf-8'):
 
     try:
-        script_dir = os.path.dirname(os.path.realpath( __file__ ))
-        os.environ['PATH'] = '{};{}'.format(script_dir, os.environ['PATH'])
         print('loading', filepath)
 
         if not filepath.lower().endswith('.xml'):

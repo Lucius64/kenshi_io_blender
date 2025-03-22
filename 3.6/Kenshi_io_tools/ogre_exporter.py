@@ -1,6 +1,5 @@
 
 import os
-import sys
 from math import radians
 import traceback
 from typing import List, Dict, Tuple, Set
@@ -11,8 +10,7 @@ import bmesh
 from mathutils import Matrix
 
 from .util import func_timer
-sys.path.append(os.path.dirname(__file__))
-from Kenshi_blender_tool import *
+from .kenshi_blender_tool import *
 
 
 @func_timer
@@ -79,7 +77,7 @@ def collect_animations(
         frame_step = context.scene.frame_step
 
         for act in sorted(actions, key=lambda action: action.name):
-            export_info_log.append('Export action {}'.format(act.name))
+            export_info_log.append(f'Export action {act.name}')
             start, end = act.frame_range
             animation = AnimationData()
             animation.name = act.name
@@ -229,7 +227,7 @@ def collect_bake_animations(
 
             p_bones_foreach_set = p_bones.foreach_set
             for act in sorted(actions, key=lambda action: action.name):
-                export_info_log.append('Export action {}'.format(act.name))
+                export_info_log.append(f'Export action {act.name}')
                 start, end = act.frame_range
                 animation = AnimationData()
                 animation.name = act.name
@@ -445,7 +443,7 @@ def collect_mesh(
             if num_fake_pose > 0:
                 nd_shape_keys = np.zeros((vertex_count, 3), dtype=np.float32)
                 for i in range(1, num_fake_pose + 1):
-                    submesh.append_shapekey('fake_pose{}'.format(i), nd_shape_keys, out_nd_indices)
+                    submesh.append_shapekey(f'fake_pose{i}', nd_shape_keys, out_nd_indices)
 
         bone_assignments = [BoneAssignmentData(vert.index,
                                                mesh_data.get_bone_id(ob.vertex_groups[group.group].name),
@@ -462,7 +460,7 @@ def collect_mesh(
 
         temp_object.to_mesh_clear()
 
-        export_info_log.append('Export mesh {}'.format(ob.name))
+        export_info_log.append(f'Export mesh {ob.name}')
         submesh_array.append(submesh)
 
     mesh_data.set_submeshes(submesh_array)
@@ -507,19 +505,19 @@ def collect_bones(
                                 bone.parent.name if bone.parent else '',
                                 [])
 
-            export_info_log.append('Export bone {} {}'.format(id, bone.name))
+            export_info_log.append(f'Export bone {id} {bone.name}')
             bones.append(old_bone)
 
         if export_skeleton:
             for i, bone in enumerate(sorted(bones, key=lambda bone: bone.id)): # Renumbering bone ID
                 bone.id = i
-                export_info_log.append('Renumbering bone {} {}'.format(i, bone.name))
+                export_info_log.append(f'Renumbering bone {i} {bone.name}')
 
         if skeleton_data:
             skeleton_data.set_bones(bones)
         if mesh_data:
             mesh_data.set_bone_mapping(bones)
-            mesh_data.set_linked_skeleton_name('{}.skeleton'.format(armature.name))
+            mesh_data.set_linked_skeleton_name(f'{armature.name}.skeleton')
 
 
 @func_timer
@@ -633,7 +631,7 @@ def save(
     except:
         err_mes = traceback.format_exc()
         print(err_mes)
-        operator.report({'ERROR'}, 'Export error!\n{}'.format(err_mes))
+        operator.report({'ERROR'}, f'Export error!\n{err_mes}')
 
     return {'FINISHED'}
 
@@ -655,7 +653,7 @@ def save_skeleton(
         skeleton_version = SkeletonVersion.V_Latest
 
     if not filepath.lower().endswith('.skeleton'):
-        filepath = "{}.skeleton".format(filepath)
+        filepath = "f{filepath}.skeleton"
 
     print('saving...')
     print(filepath)
@@ -713,6 +711,6 @@ def save_skeleton(
     except:
         err_mes = traceback.format_exc()
         print(err_mes)
-        operator.report({'ERROR'}, 'Export error!\n{}'.format(err_mes))
+        operator.report({'ERROR'}, f'Export error!\n{err_mes}')
 
     return {'FINISHED'}

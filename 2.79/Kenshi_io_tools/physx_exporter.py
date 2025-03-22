@@ -1,6 +1,5 @@
 
 import os
-import sys
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import traceback
@@ -11,8 +10,7 @@ import bmesh
 from mathutils import Matrix
 
 from .util import func_timer
-sys.path.append(os.path.dirname(__file__))
-from Kenshi_blender_tool import KenshiPhysXSerializer
+from .kenshi_blender_tool import KenshiPhysXSerializer
 
 
 def shape_bounds(obj: bpy.types.Object):
@@ -305,9 +303,6 @@ def save(
         objects: str = 'ALL',
         transform: str = 'SCENE'):
     try:
-        script_dir = os.path.dirname(os.path.realpath( __file__ ))
-        os.environ['PATH'] = '{};{}'.format(script_dir, os.environ['PATH'])
-
         if not filepath.lower().endswith('.xml'):
             filepath = '{}.xml'.format(filepath)
         print('Saving', filepath)

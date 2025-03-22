@@ -1,6 +1,5 @@
 
 import os
-import sys
 from math import radians
 import traceback
 from typing import List, Dict, Tuple, Set
@@ -11,8 +10,7 @@ import bmesh
 from mathutils import Matrix
 
 from .util import func_timer
-sys.path.append(os.path.dirname(__file__))
-from Kenshi_blender_tool import *
+from .kenshi_blender_tool import *
 
 
 @func_timer

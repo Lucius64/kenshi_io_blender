@@ -1,11 +1,11 @@
 
 import os
 from statistics import mean
-import sys
 import traceback
 from typing import List, Dict, Set
 
 import bpy
+import bmesh
 from bpy.types import (
     Context,
     Mesh,
@@ -16,8 +16,7 @@ from mathutils import Matrix, Vector
 import numpy as np
 
 from .util import func_timer
-sys.path.append(os.path.dirname(__file__))
-from Kenshi_blender_tool import *
+from .kenshi_blender_tool import *
 
 
 def set_bone_head_position(bones: List[BoneData]):
@@ -175,7 +174,10 @@ def create_mesh(
         import_shapekeys: bool = True,
         create_materials: bool = True,
         use_filename: bool = False,
-        select_encoding='utf-8'):
+        select_encoding='utf-8',
+        cleanup_vertices: str = 'DEFAULT',
+        submesh_name_delimiter: str = '',
+        ):
     mesh_objects: List[Object] = []
     scene_collection = context.scene.collection
     scene_layer = context.view_layer
@@ -185,7 +187,7 @@ def create_mesh(
 
     for submesh in submeshes:
         submesh_index = submesh.index
-        submesh_name = ('{}{:0={}}'.format(mesh_name, submesh_index, submesh_count)
+        submesh_name = ('{}{}{:0={}}'.format(mesh_name, submesh_name_delimiter, submesh_index, submesh_count)
                         if use_filename
                         else submesh.encorded_name.decode(select_encoding,
                                                           errors='replace'))
@@ -261,9 +263,45 @@ def create_mesh(
         me.update(calc_edges=True)
         me.use_auto_smooth = True
 
-        bpy.ops.object.editmode_toggle()
-        bpy.ops.mesh.remove_doubles(threshold=0.001)
-        bpy.ops.object.editmode_toggle()
+        if cleanup_vertices == 'KEEP_FACE':
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='EDIT')
+            bm = bmesh.from_edit_mesh(me)
+            face_dict: Dict[Vector, int] = {}
+            dupulicate_faces: List[int] = []
+
+            bm.faces.ensure_lookup_table()
+            for face in me.polygons:
+                v = Vector(
+                    (
+                        round(face.center.x, 2),
+                        round(face.center.y, 2),
+                        round(face.center.z, 2)
+                    )
+                ).freeze()
+
+                i = face_dict.get(v, -1)
+                if i < 0:
+                    face_dict[v] = face.index
+                    bm.faces[face.index].select = True
+                else:
+                    dupulicate_faces.append(face.index)
+                    bm.faces[face.index].select = False
+
+            bmesh.update_edit_mesh(me)
+            bpy.ops.mesh.remove_doubles(threshold=0.0001)
+            if len(dupulicate_faces) > 0:
+                bpy.ops.mesh.select_all(action = 'INVERT')
+                bpy.ops.mesh.remove_doubles(threshold=0.0001)
+            bm.free()
+            bpy.ops.mesh.select_all(action = 'SELECT')
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        elif cleanup_vertices == 'DEFAULT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.remove_doubles(threshold=0.0001)
+            bpy.ops.object.mode_set(mode='OBJECT')
 
         if import_normals and submesh.geometry.has_normals:
             normals = submesh.get_normals()
@@ -294,6 +332,7 @@ def create_mesh(
                           '/',
                           len(me.polygons))
         import_info_log.append('Created mesh {}'.format(submesh_name))
+        ob.select_set(False)
         mesh_objects.append(ob)
 
     if armature:
@@ -408,7 +447,10 @@ def load(operator: Operator,
          use_selected_skeleton: bool = False,
          create_materials: bool = True,
          use_filename: bool = False,
-         select_encoding: str = 'utf-8') -> Set[str]:
+         select_encoding: str = 'utf-8',
+         cleanup_vertices: str = 'DEFAULT',
+         submesh_name_delimiter: str = '',
+         ) -> Set[str]:
     if not os.path.isfile(filepath):
         operator.report({'WARNING'}, 'Selected file is not exist')
         return {'CANCELLED'}
@@ -430,6 +472,10 @@ def load(operator: Operator,
         mesh_data = serializer.load_mesh(mesh_file)
 
         selected_skeleton = context.active_object if use_selected_skeleton and context.active_object and context.active_object.type == 'ARMATURE' else None
+        objs = context.selected_objects
+        for obj in objs:
+            if obj.type == 'MESH':
+                obj.select_set(False)
 
         skeleton_data = None
         bone_map: Dict[int, str] = {}
@@ -464,7 +510,10 @@ def load(operator: Operator,
                     import_shapekeys=import_shapekeys,
                     select_encoding=select_encoding,
                     create_materials=create_materials,
-                    use_filename=use_filename)
+                    use_filename=use_filename,
+                    cleanup_vertices=cleanup_vertices,
+                    submesh_name_delimiter=submesh_name_delimiter,
+                    )
 
         if import_animations and skeleton_data:
             render = context.scene.render
@@ -477,6 +526,10 @@ def load(operator: Operator,
                              armature=selected_skeleton,
                              fps=render.fps,
                              round_frames=round_frames)
+
+        for obj in objs:
+            if obj.type == 'MESH':
+                obj.select_set(True)
 
         print('\n'.join(import_info_log))
         print('done.')
