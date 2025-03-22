@@ -1,0 +1,64 @@
+{
+  "version": "v1",
+  "blocklist": [],
+  "data": [
+    {
+      "schema_version": "1.0.0",
+      "id": "Lucius_Kenshi_IO_Tool",
+      "name": "Kenshi IO Tools (mesh, skeleton, collision)",
+      "tagline": "Import-Export Kenshi Model and collision files",
+      "version": "1.3.0",
+      "type": "add-on",
+      "maintainer": "Lucius",
+      "license": [
+        "SPDX:GPL-3.0-or-later"
+      ],
+      "blender_version_min": "4.2.0",
+      "website": "https://github.com/Lucius64/kenshi_io_blender/",
+      "copyright": [
+        "2025 Lucius64"
+      ],
+      "permissions": {
+        "files": "Import/export OGRE from/to disk"
+      },
+      "platforms": [
+        "windows-x64"
+      ],
+      "python_versions": [
+        "3.11"
+      ],
+      "archive_url": "./extensions/Lucius_Kenshi_IO_Tool_4.2-1.3.0-windows_x64.zip",
+      "archive_size": 3974747,
+      "archive_hash": "sha256:f307251055a85c95e4ad928da2e49bede4a0413832df8c3a26ce18f9f9fa5bef"
+    },
+    {
+      "schema_version": "1.0.0",
+      "id": "Lucius_Kenshi_IO_Tool",
+      "name": "Kenshi IO Tools (mesh, skeleton, collision)",
+      "tagline": "Import-Export Kenshi Model and collision files",
+      "version": "1.3.0",
+      "type": "add-on",
+      "maintainer": "Lucius",
+      "license": [
+        "SPDX:GPL-3.0-or-later"
+      ],
+      "blender_version_min": "4.4.0",
+      "website": "https://github.com/Lucius64/kenshi_io_blender/",
+      "copyright": [
+        "2025 Lucius64"
+      ],
+      "permissions": {
+        "files": "Import/export OGRE from/to disk"
+      },
+      "platforms": [
+        "windows-x64"
+      ],
+      "python_versions": [
+        "3.11"
+      ],
+      "archive_url": "./extensions/Lucius_Kenshi_IO_Tool_4.4-1.3.0-windows_x64.zip",
+      "archive_size": 3975205,
+      "archive_hash": "sha256:e4ab166095ab60b1fb7e8027d185a7e1c4dc48a9b35330f180247d9486da54c8"
+    }
+  ]
+}
