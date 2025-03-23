@@ -24,7 +24,8 @@ Kenshiの3DアセットをBlenderにインポート及びエクスポートす�
 
 ## 説明
 
-- [インストール/アンインストール方法](Installation-ja.md)
+- [インストール/アンインストール方法](Installation_extension-ja.md)
+    - [旧アドオン](Installation-ja.md)
 - [オプションの説明](Option_description-ja.md)
 
 

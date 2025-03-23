@@ -1,6 +1,6 @@
 # Kenshi Blender Plugin
 
-[Japanes](README-ja.md)
+:flag_japan:[Japanese](README-ja.md)
 
 This is a plugin to import and export Kenshi 3D assets to Blender.
 
@@ -24,7 +24,8 @@ It has the following operators:
 
 ## Description
 
-- [Installing/Uninstalling](Installation.md)
+- [Installing/Uninstalling](Installation_extension.md)
+    - [Legacy Add-ons](Installation.md)
 - [Option description](Option_description.md)
 
 
