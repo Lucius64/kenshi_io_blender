@@ -1,6 +1,6 @@
 # Kenshi Blender Plugin
 
-[English](../README.md)
+[English](README.md)
 
 Kenshiの3DアセットをBlenderにインポート及びエクスポートするためのプラグインです。
 
@@ -61,4 +61,4 @@ Kenshiの3DアセットをBlenderにインポート及びエクスポートす�
 
 ## NOTICE
 
-[NOTICE](../NOTICE.md)
+[NOTICE](NOTICE.md)

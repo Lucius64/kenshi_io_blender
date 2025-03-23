@@ -1,6 +1,6 @@
 # Kenshi Blender Plugin
 
-[Japanes](docs/README-ja.md)
+[Japanes](README-ja.md)
 
 This is a plugin to import and export Kenshi 3D assets to Blender.
 
@@ -8,7 +8,7 @@ This is a plugin to import and export Kenshi 3D assets to Blender.
 ## Requirements
 
 - Windows
-- Blender 2.79 or higher
+- Blender 2.79 or later
 
 
 ## Features
@@ -24,8 +24,8 @@ It has the following operators:
 
 ## Description
 
-- [Installing/Uninstalling](docs/Installation.md)
-- [Option description](docs/Option_description.md)
+- [Installing/Uninstalling](Installation.md)
+- [Option description](Option_description.md)
 
 
 ## Improvements
