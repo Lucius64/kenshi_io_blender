@@ -479,7 +479,8 @@ def collect_bones(
         rot = Matrix.Rotation(radians(-90), 4, 'X')    # Rotate to y-up coordinates
         fix = Matrix.Rotation(radians(90), 4, 'Z') @ Matrix.Rotation(radians(180), 4, 'X')    # Fix bone axis
 
-        bone_id_max = max([bone['OGREID'] for bone in data.bones if 'OGREID' in bone])
+        ogreid_list = [bone['OGREID'] for bone in data.bones if 'OGREID' in bone]
+        bone_id_max = max(ogreid_list) if len(ogreid_list) > 0 else -1
         index = 0
         for bone in data.bones:
             if 'OGREID' in bone:
