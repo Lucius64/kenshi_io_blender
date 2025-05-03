@@ -7,7 +7,7 @@
       "id": "Lucius_Kenshi_IO_Tool",
       "name": "Kenshi IO Tools (mesh, skeleton, collision)",
       "tagline": "Import-Export Kenshi Model and collision files",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "type": "add-on",
       "maintainer": "Lucius",
       "license": [
@@ -28,16 +28,16 @@
       "python_versions": [
         "3.11"
       ],
-      "archive_url": "./extensions/Lucius_Kenshi_IO_Tool_4.2-1.3.0-windows_x64.zip",
-      "archive_size": 3974745,
-      "archive_hash": "sha256:e62745b6cacf802745b93a46748da2cd1d3b821849d6206170f68c99ece510b1"
+      "archive_url": "./extensions/Lucius_Kenshi_IO_Tool_4.2-1.3.1-windows_x64.zip",
+      "archive_size": 3974774,
+      "archive_hash": "sha256:942d332ffd9571bde54a6dec582714b0eaaf1bed29c3786d9305985bec6784ed"
     },
     {
       "schema_version": "1.0.0",
       "id": "Lucius_Kenshi_IO_Tool",
       "name": "Kenshi IO Tools (mesh, skeleton, collision)",
       "tagline": "Import-Export Kenshi Model and collision files",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "type": "add-on",
       "maintainer": "Lucius",
       "license": [
@@ -57,9 +57,9 @@
       "python_versions": [
         "3.11"
       ],
-      "archive_url": "./extensions/Lucius_Kenshi_IO_Tool_4.4-1.3.0-windows_x64.zip",
-      "archive_size": 3975205,
-      "archive_hash": "sha256:26bfa820038fd70bd9f1f3047cab27d1b7fb8cc19096f3733715715f86373ec7"
+      "archive_url": "./extensions/Lucius_Kenshi_IO_Tool_4.4-1.3.1-windows_x64.zip",
+      "archive_size": 3975232,
+      "archive_hash": "sha256:c29f7ec71b08f359ccf87dc6c342fc0c815b6baf759c67593c97a81dc7d86649"
     }
   ]
 }
