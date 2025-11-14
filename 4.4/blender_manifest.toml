@@ -3,7 +3,7 @@ schema_version = "1.0.0"
 # Example of manifest file for a Blender extension
 # Change the values according to your extension
 id = "Lucius_Kenshi_IO_Tool"
-version = "1.3.1"
+version = "1.3.2"
 name = "Kenshi IO Tools (mesh, skeleton, collision)"
 tagline = "Import-Export Kenshi Model and collision files"
 maintainer = "Lucius"
